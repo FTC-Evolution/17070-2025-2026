@@ -157,7 +157,7 @@ public class NewGrosBot extends LinearOpMode {
             } else if (gamepad2.a) {
                 servo1.setPower(-1);
             } else if (gamepad2.x) {
-                servo1.setPower(0);
+                servo1.setPower(0);//fuck git
             }
 
             if (gamepad2.right_trigger > 0.75) {
