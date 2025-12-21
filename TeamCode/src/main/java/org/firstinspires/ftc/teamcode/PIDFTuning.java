@@ -2,12 +2,16 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
+
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 @TeleOp
 public class PIDFTuning extends OpMode {
-    public DcMotorEx fLywheelMotor;
+    public DcMotorEx flywheelMotor;
 
     public double highVelocity = 1500;
 
@@ -17,21 +21,21 @@ public class PIDFTuning extends OpMode {
 
     double F = 0;
 
-    double P = 0; 
+    double P = 0;
 
-    double stepSizes = {10.0, 1.0, 0.1, 0.001, 0.0001};
+    double[] stepSizes = {10.0, 1.0, 0.1, 0.001, 0.0001};
 
     int stepIndex = 1;
 
     @Override
     public void init() {
-        fLywheelMotor = hardwareMap.get(DcMotorEx.class, "motor");
-        fLywheelMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        fLywheelMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        flywheelMotor = hardwareMap.get(DcMotorEx.class, "motor");
+        flywheelMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        flywheelMotor.setDirection(DcMotorSimple.Direction.REVERSE);
 
         PIDFCoefficients pidfCoefficients = new PIDFCoefficients(P, 0, 0, F);
-        fLywheelMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, pidfCoefficients);
-        telemetry addLine("Init complete");
+        flywheelMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, pidfCoefficients);
+        telemetry.addLine("Init complete");
     }
 
     @Override
@@ -40,11 +44,11 @@ public class PIDFTuning extends OpMode {
         // set target velocity
         // update telemetry
         if (gamepad1.yWasPressed()) {
-            if (curTargetVelocity == highVeLocity) {
-            curTargetVelocity = LowVeLocity;
+            if (curTargetVelocity == highVelocity) {
+                curTargetVelocity = LowVelocity;
             } else { curTargetVelocity = highVelocity; }
         }
-        
+
         if (gamepad1. bWasPressed()) {
             stepIndex = (stepIndex + 1) % stepSizes.length;
         }
@@ -64,19 +68,19 @@ public class PIDFTuning extends OpMode {
 
         // set new PIDE coefficients
         PIDFCoefficients pidfCoefficients = new PIDFCoefficients(P, 0, 0, F);
-        fLywheeLMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, pidfCoefficients);
+        flywheelMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, pidfCoefficients);
 
         // set velocity
-        fLywheelMotor.setVelocity(curTargetVeLocity);
+        flywheelMotor.setVelocity(curTargetVelocity);
 
-        double curVelocity = flywheelMotor.getVelocity;
+        double curVelocity = flywheelMotor.getVelocity();
         double error = curTargetVelocity - curVelocity;
 
 
-        teLemetry.addData("Target Velocity", curTargetVeLocity);
+        telemetry.addData("Target Velocity", curTargetVelocity);
         telemetry.addData("Current Velocity", "%. 2f", curVelocity);
-        teLemetry.addData("Error", "%.2f", error);
-        telemetry.addLine("------------------")
+        telemetry.addData("Error", "%.2f", error);
+        telemetry.addLine("------------------");
         telemetry.addData("Tuning P", "%.4f (D-Pad U/D", P);
         telemetry.addData("Tuning F", "%.4f (D-Pad L/R)", F);
         telemetry.addData("Step Size", "%.4f (B Button)", stepSizes[stepIndex]);
