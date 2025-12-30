@@ -1,3 +1,32 @@
+
+
+
+
+
+
+
+
+
+
+
+// ***************************Il FAUT CHANGER LES VALEURS A LA LIGNE 103**************************
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /*   MIT License
  *   Copyright (c) [2025] [Base 10 Assets, LLC]
  *
@@ -23,6 +52,9 @@
 //test pour odometry
 
 package org.firstinspires.ftc.teamcode;
+
+import static org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.MM;
+import static org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit.DEGREES;
 
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -67,6 +99,15 @@ For support, contact tech@gobilda.com
 
 public class Odometry extends LinearOpMode {
 
+
+    //Voici toutes les valeurs a modifier pour le robot (il faut etre precis!)
+    //En milimetres et en degres
+    double x_offset = 0.0;
+    double y_offset = 0.0;
+    double xStartingPosition = 0.0;
+    double yStartingPosition = 0.0;
+    double headingStartingPosition = 0.0;
+
     GoBildaPinpointDriver odo; // Declare OpMode member for the Odometry Computer
 
     double oldTime = 0;
@@ -88,7 +129,7 @@ public class Odometry extends LinearOpMode {
         the tracking point the Y (strafe) odometry pod is. forward of center is a positive number,
         backwards is a negative number.
          */
-        odo.setOffsets(-84.0, -168.0, DistanceUnit.MM); //these are tuned for 3110-0002-0001 Product Insight #1
+        odo.setOffsets(x_offset, y_offset, MM); //Offsets for the x and y odometry pods on the robot
 
         /*
         Set the kind of pods used by your robot. If you're using goBILDA odometry pods, select either
@@ -120,10 +161,18 @@ public class Odometry extends LinearOpMode {
         odo.resetPosAndIMU();
 
         telemetry.addData("Status", "Initialized");
-        telemetry.addData("X offset", odo.getXOffset(DistanceUnit.MM));
-        telemetry.addData("Y offset", odo.getYOffset(DistanceUnit.MM));
+        telemetry.addData("X offset", odo.getXOffset(MM));
+        telemetry.addData("Y offset", odo.getYOffset(MM));
         telemetry.addData("Device Version Number:", odo.getDeviceVersion());
         telemetry.addData("Heading Scalar", odo.getYawScalar());
+        telemetry.update();
+
+        sleep(2000);
+        odo.setPosition(new Pose2D(DistanceUnit.MM,xStartingPosition, yStartingPosition, AngleUnit.DEGREES,headingStartingPosition));
+        telemetry.addData("X starting position", xStartingPosition);
+        telemetry.addData("Y starting position", yStartingPosition);
+        telemetry.addData("Heading starting position", headingStartingPosition);
+        telemetry.addData("Oh Yeah ","Let's GO!!!");
         telemetry.update();
 
         // Wait for the game to start (driver presses START)
@@ -171,13 +220,13 @@ public class Odometry extends LinearOpMode {
             gets the current Position (x & y in mm, and heading in degrees) of the robot, and prints it.
              */
             Pose2D pos = odo.getPosition();
-            String data = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", pos.getX(DistanceUnit.MM), pos.getY(DistanceUnit.MM), pos.getHeading(AngleUnit.DEGREES));
+            String data = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", pos.getX(MM), pos.getY(MM), pos.getHeading(AngleUnit.DEGREES));
             telemetry.addData("Position", data);
 
             /*
             gets the current Velocity (x & y in mm/sec and heading in degrees/sec) and prints it.
              */
-            String velocity = String.format(Locale.US,"{XVel: %.3f, YVel: %.3f, HVel: %.3f}", odo.getVelX(DistanceUnit.MM), odo.getVelY(DistanceUnit.MM), odo.getHeadingVelocity(UnnormalizedAngleUnit.DEGREES));
+            String velocity = String.format(Locale.US,"{XVel: %.3f, YVel: %.3f, HVel: %.3f}", odo.getVelX(MM), odo.getVelY(MM), odo.getHeadingVelocity(DEGREES));
             telemetry.addData("Velocity", velocity);
 
 

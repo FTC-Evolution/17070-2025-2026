@@ -1,6 +1,30 @@
 package org.firstinspires.ftc.teamcode;
 
-//😎
+
+
+
+
+
+
+
+// ****************************You NEED to change the values at line 149!!!****************************
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
