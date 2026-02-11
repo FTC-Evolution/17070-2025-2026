@@ -229,7 +229,7 @@ public class NewGrosBot extends LinearOpMode {
             sleep(CYCLE_MS);
             idle();
 
-            if (gamepad2.right_trigger > 0.75) {
+             if (gamepad2.right_trigger > 0.75) {
                 intakeMotor.setPower(0.75);
             } else if (gamepad2.left_trigger > 0.75) {
                 intakeMotor.setPower(-0.75);
