@@ -2,7 +2,6 @@ package org.firstinspires.ftc.teamcode;
 
 //😎
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -23,7 +22,18 @@ public class NewGrosBot extends LinearOpMode {
     DcMotor backLeftDrive;
     DcMotor backRightDrive;
 
-    CRServo servo1;
+    static final double INCREMENT   = 0.01;     // amount to slew servo each CYCLE_MS cycle
+    int    CYCLE_MS    =   17;     // period of each cycle
+    static final double MAX_POS     =  1.0;     // Maximum rotational position
+    static final double MIN_POS     =  0.0;     // Minimum rotational position
+
+    // Define class members
+    Servo   servo1;
+
+    Servo servo2;
+    double  position1 = 1; // Start at beginning position
+
+    double  position2 = 0; // Start at beginning position
 
     // This declares the IMU needed to get the current direction the robot is facing
     //IMU imu;
@@ -54,12 +64,16 @@ public class NewGrosBot extends LinearOpMode {
         backLeftDrive = hardwareMap.get(DcMotor.class, "backLeftMotor");
         backRightDrive = hardwareMap.get(DcMotor.class, "backRightMotor");
 
-        servo1 = hardwareMap.get(CRServo.class, "servo");
+        // Connect to servo (Assume Robot Left Hand)
+        // Change the text in quotes to match any servo name on your robot.
+        servo1 = hardwareMap.get(Servo.class, "servo1");
+        servo2 = hardwareMap.get(Servo.class, "servo2");
 
         // We set the left motors in reverse which is needed for drive trains where the left
         // motors are opposite to the right ones.
-        backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
+        backRightDrive.setDirection(DcMotor.Direction.REVERSE);
         frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
+
 
         // This uses RUN_USING_ENCODER to be more accurate.   If you don't have the encoder
         // wires, you should remove these
@@ -73,13 +87,14 @@ public class NewGrosBot extends LinearOpMode {
         intakeMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         elevator.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
+        intakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
 
         imu = hardwareMap.get(IMU.class, "imu");
         // This needs to be changed to match the orientation on your robot
         RevHubOrientationOnRobot.LogoFacingDirection logoDirection =
-                RevHubOrientationOnRobot.LogoFacingDirection.UP;
+                RevHubOrientationOnRobot.LogoFacingDirection.RIGHT;
         RevHubOrientationOnRobot.UsbFacingDirection usbDirection =
-                RevHubOrientationOnRobot.UsbFacingDirection.FORWARD;
+                RevHubOrientationOnRobot.UsbFacingDirection.UP;
 
         RevHubOrientationOnRobot orientationOnRobot = new
                 RevHubOrientationOnRobot(logoDirection, usbDirection);
@@ -91,6 +106,7 @@ public class NewGrosBot extends LinearOpMode {
         // reverse the left side instead.
         // See the note about this earlier on this page.
         lowMotor.setDirection(DcMotorEx.Direction.REVERSE);
+        highMotor.setDirection(DcMotorEx.Direction.REVERSE);
 
         waitForStart();
 
@@ -153,17 +169,71 @@ public class NewGrosBot extends LinearOpMode {
                 lowMotor.setVelocity(0);
             }
 
-            if (gamepad2.y) {
-                servo1.setPower(1);
-            } else if (gamepad2.a) {
-                servo1.setPower(-1);
-            } else if (gamepad2.x) {
-                servo1.setPower(0);
+            // slew the servo, according to the rampUp (direction) variable.
+            if (gamepad2.right_stick_y > 0.75) {
+                // Keep stepping up until we hit the max value.
+                position1 += INCREMENT ;
+                if (position1 >= MAX_POS ) {
+                    position1 = MAX_POS;
+                    //rampUp = !rampUp;   // Switch ramp direction
+                }
+            }   else if(gamepad2.right_stick_y < -0.75) {
+                // Keep stepping down until we hit the min value.
+                position1 -= INCREMENT ;
+                if (position1 <= MIN_POS ) {
+                    position1 = MIN_POS;
+                    //rampUp = !rampUp;  // Switch ramp direction
+                }
+            }   else if(gamepad2.right_stick_button) {
+                position1 = 1;
             }
 
+            // slew the servo, according to the rampUp (direction) variable.
+            if (gamepad2.left_stick_y < -0.75) {
+                // Keep stepping up until we hit the max value.
+                position2 += INCREMENT ;
+                if (position2 >= MAX_POS ) {
+                    position2 = MAX_POS;
+                    //rampUp = !rampUp;   // Switch ramp direction
+                }
+            }   else if(gamepad2.left_stick_y > 0.75) {
+                // Keep stepping down until we hit the min value.
+                position2 -= INCREMENT ;
+                if (position2 <= MIN_POS ) {
+                    position2 = MIN_POS;
+                    //rampUp = !rampUp;  // Switch ramp direction
+                }
+            }   else if(gamepad2.left_stick_button) {
+                position2 = 0;
+            }
+
+
+
+            /* if (gamepad2.dpad_up) {
+                CYCLE_MS = CYCLE_MS + 2;
+                while (gamepad2.dpad_up) {}
+            } else if (gamepad2.dpad_down) {
+                CYCLE_MS = CYCLE_MS - 2;
+                while (gamepad2.dpad_down) {}
+            } */
+
+            // Display the current value
+            telemetry.addData("Servo 1 Position", "%5.2f", position1);
+            telemetry.addData("Servo 2 Position", "%5.2f", position2);
+            telemetry.addData(">", "Press Stop to end test." );
+            telemetry.update();
+
+            // Set the servo to the new position and pause;
+            servo1.setPosition(position1);
+            servo2.setPosition(position2);
+            sleep(CYCLE_MS);
+            idle();
+
             if (gamepad2.right_trigger > 0.75) {
-                intakeMotor.setPower(0.5);
+                intakeMotor.setPower(0.75);
             } else if (gamepad2.left_trigger > 0.75) {
+                intakeMotor.setPower(-0.75);
+            } else if (gamepad2.x) {
                 intakeMotor.setPower(0);
             }
 
@@ -228,10 +298,10 @@ public class NewGrosBot extends LinearOpMode {
 
                 // This calculates the power needed for each wheel based on the amount of forward,
                 // strafe right, and rotate
-                double frontLeftPower = newForward + newRight + -gamepad1.right_stick_x;
-                double frontRightPower = newForward - newRight - -gamepad1.right_stick_x;
-                double backRightPower = newForward + newRight - -gamepad1.right_stick_x;
-                double backLeftPower = newForward - newRight + -gamepad1.right_stick_x;
+                double frontLeftPower = newForward + newRight + gamepad1.right_stick_x;
+                double frontRightPower = newForward - newRight - gamepad1.right_stick_x;
+                double backRightPower = newForward + newRight - gamepad1.right_stick_x;
+                double backLeftPower = newForward - newRight + gamepad1.right_stick_x;
 
                 double maxPower = 1.0;
                 double maxSpeed = 1.0;  // make this slower for outreaches

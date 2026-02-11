@@ -48,12 +48,12 @@ import com.qualcomm.robotcore.hardware.Servo;
  * Use Android Studio to Copy this Class, and Paste it into your team's code folder with a new name.
  * Remove or comment out the @Disabled line to add this OpMode to the Driver Station OpMode list
  */
-@Disabled
+
 @TeleOp(name = "Concept: Scan Servo", group = "Concept")
 public class ServoTest extends LinearOpMode {
 
     static final double INCREMENT   = 0.01;     // amount to slew servo each CYCLE_MS cycle
-    static final int    CYCLE_MS    =   50;     // period of each cycle
+    int    CYCLE_MS    =   17;     // period of each cycle
     static final double MAX_POS     =  1.0;     // Maximum rotational position
     static final double MIN_POS     =  0.0;     // Minimum rotational position
 
@@ -79,22 +79,31 @@ public class ServoTest extends LinearOpMode {
         // Scan servo till stop pressed.
         while(opModeIsActive()){
 
+
             // slew the servo, according to the rampUp (direction) variable.
-            if (rampUp) {
+            if (gamepad2.y) {
                 // Keep stepping up until we hit the max value.
                 position += INCREMENT ;
                 if (position >= MAX_POS ) {
                     position = MAX_POS;
-                    rampUp = !rampUp;   // Switch ramp direction
+                    //rampUp = !rampUp;   // Switch ramp direction
                 }
             }
-            else {
+            else if(gamepad2.a) {
                 // Keep stepping down until we hit the min value.
                 position -= INCREMENT ;
                 if (position <= MIN_POS ) {
                     position = MIN_POS;
-                    rampUp = !rampUp;  // Switch ramp direction
+                    //rampUp = !rampUp;  // Switch ramp direction
                 }
+            }
+
+            if (gamepad2.dpad_up) {
+                CYCLE_MS = CYCLE_MS + 2;
+                while (gamepad2.dpad_up) {}
+            } else if (gamepad2.dpad_down) {
+                CYCLE_MS = CYCLE_MS - 2;
+                while (gamepad2.dpad_down) {}
             }
 
             // Display the current value
