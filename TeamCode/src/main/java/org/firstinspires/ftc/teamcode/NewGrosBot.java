@@ -1,10 +1,8 @@
 package org.firstinspires.ftc.teamcode;
 
 //😎
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -12,71 +10,83 @@ import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.hardware.IMU;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
+
 
 @TeleOp
 public class NewGrosBot extends LinearOpMode {
     double plusOnePower = 0.0;
-
     DcMotor frontLeftDrive;
     DcMotor frontRightDrive;
     DcMotor backLeftDrive;
     DcMotor backRightDrive;
 
-    static final double INCREMENT   = 0.01;     // amount to slew servo each CYCLE_MS cycle
-    int    CYCLE_MS    =   17;     // period of each cycle
-    static final double MAX_POS     =  1.0;     // Maximum rotational position
-    static final double MIN_POS     =  0.0;     // Minimum rotational position
+    DcMotorEx highMotor;
+    DcMotorEx lowMotor;
+    DcMotor intakeMotor;
+    DcMotor elevator;
 
+    static final double INCREMENT = 0.01;     // amount to slew servo each CYCLE_MS cycle
+    int CYCLE_MS = 17;     // period of each cycle
+    static final double MAX_POS = 1.0;     // Maximum rotational position
+    static final double MIN_POS = -1.0;     // Minimum rotational position
+    static ElapsedTime myTimer = new ElapsedTime();
     // Define class members
-    Servo   servo1;
-
+    Servo servo1;
     Servo servo2;
-    double  position1 = 1; // Start at beginning position
+    double position1 = MAX_POS; // Start at beginning position
+    double position2 = MIN_POS; // Start at beginning position
 
-    double  position2 = 0; // Start at beginning position
+    Servo doorLeft;
+    Servo doorRight;
 
-    // This declares the IMU needed to get the current direction the robot is facing
-    //IMU imu;
-
-    //Player 2
-    double plusPower = 0.0;
     int lastInput = 0;
     int lastInput2 = 0;
     int lastInput3 = 0;
     int lastInput4 = 0;
+    int lastInput5 = 0;
+    int lastInput6 = 0;
 
     IMU imu;
 
-
-
     @Override
     public void runOpMode() throws InterruptedException {
-        // Declare our motors
-        // Make sure your ID's match your configuration
-        DcMotorEx highMotor = (DcMotorEx) hardwareMap.dcMotor.get("highMotor");
-        DcMotorEx lowMotor = (DcMotorEx) hardwareMap.dcMotor.get("lowMotor");
-        DcMotor intakeMotor = hardwareMap.dcMotor.get("intakeMotor");
-        DcMotor elevator = hardwareMap.dcMotor.get("elevatorMotor");
+        initialization();
+        waitForStart();
+        if (isStopRequested()) return;
 
+        while (opModeIsActive()) {
+            //gamepad1
+            drive();
+            intake();
+            lift();
 
+            //gamepad2
+            sorting();
+            shooter();
+        }
+    }
+
+    void initialization() {
         frontLeftDrive = hardwareMap.get(DcMotor.class, "frontLeftMotor");
         frontRightDrive = hardwareMap.get(DcMotor.class, "frontRightMotor");
         backLeftDrive = hardwareMap.get(DcMotor.class, "backLeftMotor");
         backRightDrive = hardwareMap.get(DcMotor.class, "backRightMotor");
 
-        // Connect to servo (Assume Robot Left Hand)
-        // Change the text in quotes to match any servo name on your robot.
+        highMotor = (DcMotorEx) hardwareMap.dcMotor.get("highMotor");
+        lowMotor = (DcMotorEx) hardwareMap.dcMotor.get("lowMotor");
+        intakeMotor = hardwareMap.dcMotor.get("intakeMotor");
+        elevator = hardwareMap.dcMotor.get("elevatorMotor");
+
         servo1 = hardwareMap.get(Servo.class, "servo1");
         servo2 = hardwareMap.get(Servo.class, "servo2");
+        doorLeft = hardwareMap.get(Servo.class, "doorLeft");
+        doorRight = hardwareMap.get(Servo.class, "doorRight");
 
-        // We set the left motors in reverse which is needed for drive trains where the left
-        // motors are opposite to the right ones.
+
         backRightDrive.setDirection(DcMotor.Direction.REVERSE);
         frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
 
-
-        // This uses RUN_USING_ENCODER to be more accurate.   If you don't have the encoder
-        // wires, you should remove these
         frontLeftDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         frontRightDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         backLeftDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -87,6 +97,8 @@ public class NewGrosBot extends LinearOpMode {
         intakeMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         elevator.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
+        lowMotor.setDirection(DcMotorEx.Direction.REVERSE);
+        highMotor.setDirection(DcMotorEx.Direction.REVERSE);
         intakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
 
         imu = hardwareMap.get(IMU.class, "imu");
@@ -101,229 +113,232 @@ public class NewGrosBot extends LinearOpMode {
         imu.initialize(new IMU.Parameters(orientationOnRobot));
 
 
-        // Reverse the right side motors. This may be wrong for your setup.
-        // If your robot moves backwards when commanded to go forwards,
-        // reverse the left side instead.
-        // See the note about this earlier on this page.
-        lowMotor.setDirection(DcMotorEx.Direction.REVERSE);
-        highMotor.setDirection(DcMotorEx.Direction.REVERSE);
+        doorLeft.setPosition(1);
+        doorRight.setPosition(0);
+    }
+    void drive() {
+        telemetry.addLine("Press A to reset Yaw");
+        //telemetry.addLine("Hold left bumper to drive in robot relative");
+        //telemetry.addLine("The left joystick sets the robot direction");
+        //telemetry.addLine("Moving the right joystick left and right turns the robot");
 
-        waitForStart();
+        // If you press the A button, then you reset the Yaw to be zero from the way
+        // the robot is currently pointing
+        if (gamepad1.a) {
+            imu.resetYaw();
+        }
+        // If you press the left bumper, you get a drive from the point of view of the robot
+        // (much like driving an RC vehicle)
+        if (gamepad1.left_bumper) {
+            // This calculates the power needed for each wheel based on the amount of forward,
+            // strafe right, and rotate
+            double frontLeftPower = -gamepad1.left_stick_y + gamepad1.left_stick_x + -gamepad1.right_stick_x;
+            double frontRightPower = -gamepad1.left_stick_y - gamepad1.left_stick_x - -gamepad1.right_stick_x;
+            double backRightPower = -gamepad1.left_stick_y + gamepad1.left_stick_x - -gamepad1.right_stick_x;
+            double backLeftPower = -gamepad1.left_stick_y - gamepad1.left_stick_x + -gamepad1.right_stick_x;
 
-        if (isStopRequested()) return;
+            double maxPower = 1.0;
+            double maxSpeed = 1.0;  // make this slower for outreaches
 
-        while (opModeIsActive()) {
+            // This is needed to make sure we don't pass > 1.0 to any wheel
+            // It allows us to keep all of the motors in proportion to what they should
+            // be and not get clipped
+            maxPower = Math.max(maxPower, Math.abs(frontLeftPower));
+            maxPower = Math.max(maxPower, Math.abs(frontRightPower));
+            maxPower = Math.max(maxPower, Math.abs(backRightPower));
+            maxPower = Math.max(maxPower, Math.abs(backLeftPower));
+
+            // We multiply by maxSpeed so that it can be set lower for outreaches
+            // When a young child is driving the robot, we may not want to allow full
+            // speed.
+            frontLeftDrive.setPower(maxSpeed * (frontLeftPower / maxPower));
+            frontRightDrive.setPower(maxSpeed * (frontRightPower / maxPower));
+            backLeftDrive.setPower(maxSpeed * (backLeftPower / maxPower));
+            backRightDrive.setPower(maxSpeed * (backRightPower / maxPower));
+        } else {
+            // First, convert direction being asked to drive to polar coordinates
+            double theta = Math.atan2(-gamepad1.left_stick_y, gamepad1.left_stick_x);
+            double r = Math.hypot(gamepad1.left_stick_x, -gamepad1.left_stick_y);
+
+            // Second, rotate angle by the angle the robot is pointing
+            theta = AngleUnit.normalizeRadians(theta -
+                    imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS));
+
+            // Third, convert back to cartesian
+            double newForward = r * Math.sin(theta);
+            double newRight = r * Math.cos(theta);
+
+            // Finally, call the drive method with robot relative forward and right amounts
+
+            // This calculates the power needed for each wheel based on the amount of forward,
+            // strafe right, and rotate
+            double frontLeftPower = newForward + newRight + gamepad1.right_stick_x;
+            double frontRightPower = newForward - newRight - gamepad1.right_stick_x;
+            double backRightPower = newForward + newRight - gamepad1.right_stick_x;
+            double backLeftPower = newForward - newRight + gamepad1.right_stick_x;
+
+            double maxPower = 1.0;
+            double maxSpeed = 1.0;  // make this slower for outreaches
+
+            // This is needed to make sure we don't pass > 1.0 to any wheel
+            // It allows us to keep all of the motors in proportion to what they should
+            // be and not get clipped
+            maxPower = Math.max(maxPower, Math.abs(frontLeftPower));
+            maxPower = Math.max(maxPower, Math.abs(frontRightPower));
+            maxPower = Math.max(maxPower, Math.abs(backRightPower));
+            maxPower = Math.max(maxPower, Math.abs(backLeftPower));
+
+            // We multiply by maxSpeed so that it can be set lower for outreaches
+            // When a young child is driving the robot, we may not want to allow full
+            // speed.
+            frontLeftDrive.setPower(maxSpeed * (frontLeftPower / maxPower));
+            frontRightDrive.setPower(maxSpeed * (frontRightPower / maxPower));
+            backLeftDrive.setPower(maxSpeed * (backLeftPower / maxPower));
+            backRightDrive.setPower(maxSpeed * (backRightPower / maxPower));
+
+        }
+    }
+
+    void intake() {
+        if (gamepad1.right_trigger > 0.75) {
+            intakeMotor.setPower(0.85);
+        } else if (gamepad1.left_trigger > 0.75) {
+            intakeMotor.setPower(-0.85);
+        } else if (gamepad1.x) {
+            intakeMotor.setPower(0);
+        }
+    }
+
+    void lift() {
+        if (gamepad1.right_bumper) {
+            elevator.setPower(0.75);
+        } else if (gamepad1.left_bumper) {
+            elevator.setPower(0);
+        }
+    }
+
+    void sorting() {
+        if (gamepad2.left_trigger > 0.75) {
+            doorLeft.setPosition(1);
+            doorRight.setPosition(0.33);
+        } else if (gamepad2.right_trigger > 0.75) {
+            doorLeft.setPosition(0.67);
+            doorRight.setPosition(0);
+        }
+    }
+
+    void shooter() {
+        //Shooting wheels (adjusting speed)
+        if (gamepad2.dpad_up) {
+            if (lastInput == 0) {
+                plusOnePower = plusOnePower + 50;
+            }
+            lastInput = 1;
+        } else {
+            lastInput = 0;
+        }
+
+        if (gamepad2.dpad_down) {
+            if (lastInput2 == 0) {
+                plusOnePower = plusOnePower - 50;
+            }
+            lastInput2 = 1;
+        } else {
+            lastInput2 = 0;
+        }
+
+        if (gamepad2.dpad_right) {
+            if (lastInput3 == 0) {
+                plusOnePower = plusOnePower + 10;
+            }
+            lastInput3 = 1;
+        } else {
+            lastInput3 = 0;
+        }
+
+        if (gamepad2.dpad_left) {
+            if (lastInput4 == 0) {
+                plusOnePower = plusOnePower - 10;
+            }
+            lastInput4 = 1;
+        } else {
+            lastInput4 = 0;
+        }
+
+        if (gamepad2.left_bumper) {
+            highMotor.setVelocity(700 + plusOnePower);
+            lowMotor.setVelocity(700 + plusOnePower);
+        } else if (gamepad2.right_bumper) {
+            highMotor.setVelocity(900 + plusOnePower);
+            lowMotor.setVelocity(900 + plusOnePower);
+        } else if (gamepad2.b) {
+            plusOnePower = 0;
+            highMotor.setVelocity(0);
+            lowMotor.setVelocity(0);
+        }
 
 
-            if (gamepad2.dpad_up){
-                if (lastInput == 0){
-                    plusOnePower = plusOnePower + 50;
-                }
-                lastInput = 1;
-            }
-            else {
-                lastInput = 0;
-            }
-
-            if (gamepad2.dpad_down){
-                if (lastInput2 == 0){
-                    plusOnePower = plusOnePower - 50;
-                }
-                lastInput2 = 1;
-            }
-            else {
-                lastInput2 = 0;
-            }
-
-            if (gamepad2.dpad_right){
-                if (lastInput3 == 0){
-                    plusOnePower = plusOnePower + 10;
-                }
-                lastInput3 = 1;
-            }
-            else {
-                lastInput3 = 0;
-            }
-
-            if (gamepad2.dpad_left){
-                if (lastInput4 == 0){
-                    plusOnePower = plusOnePower - 10;
-                }
-                lastInput4 = 1;
-            }
-            else {
-                lastInput4 = 0;
-            }
-
-            if(gamepad2.left_bumper){
-                highMotor.setVelocity(900 + plusOnePower);
-                lowMotor.setVelocity(900 + plusOnePower);
-            }
-            else if(gamepad2.right_bumper){
-                highMotor.setVelocity(1200 + plusOnePower);
-                lowMotor.setVelocity(1200 + plusOnePower);
-            }
-            else if (gamepad2.b){
-                plusOnePower = 0;
-                highMotor.setVelocity(0);
-                lowMotor.setVelocity(0);
-            }
-
-            // slew the servo, according to the rampUp (direction) variable.
+        //Shooting servos
+        if (myTimer.milliseconds() >= CYCLE_MS) {
+            //servo1 (right)
             if (gamepad2.right_stick_y > 0.75) {
-                // Keep stepping up until we hit the max value.
-                position1 += INCREMENT ;
-                if (position1 >= MAX_POS ) {
+                position1 += INCREMENT;
+                if (position1 >= MAX_POS) {
                     position1 = MAX_POS;
-                    //rampUp = !rampUp;   // Switch ramp direction
                 }
-            }   else if(gamepad2.right_stick_y < -0.75) {
-                // Keep stepping down until we hit the min value.
-                position1 -= INCREMENT ;
-                if (position1 <= MIN_POS ) {
+            } else if (gamepad2.right_stick_y < -0.75) {
+                position1 -= INCREMENT;
+                if (position1 <= MIN_POS) {
                     position1 = MIN_POS;
-                    //rampUp = !rampUp;  // Switch ramp direction
                 }
-            }   else if(gamepad2.right_stick_button) {
-                position1 = 1;
+            } else if (gamepad2.right_stick_button) {
+                position1 = MAX_POS;
             }
 
-            // slew the servo, according to the rampUp (direction) variable.
+            //servo2 (left)
             if (gamepad2.left_stick_y < -0.75) {
-                // Keep stepping up until we hit the max value.
-                position2 += INCREMENT ;
-                if (position2 >= MAX_POS ) {
+                position2 += INCREMENT;
+                if (position2 >= MAX_POS) {
                     position2 = MAX_POS;
-                    //rampUp = !rampUp;   // Switch ramp direction
                 }
-            }   else if(gamepad2.left_stick_y > 0.75) {
-                // Keep stepping down until we hit the min value.
-                position2 -= INCREMENT ;
-                if (position2 <= MIN_POS ) {
+            } else if (gamepad2.left_stick_y > 0.75) {
+                position2 -= INCREMENT;
+                if (position2 <= MIN_POS) {
                     position2 = MIN_POS;
-                    //rampUp = !rampUp;  // Switch ramp direction
                 }
-            }   else if(gamepad2.left_stick_button) {
-                position2 = 0;
+            } else if (gamepad2.left_stick_button) {
+                position2 = MIN_POS;
             }
 
-
-
-            /* if (gamepad2.dpad_up) {
-                CYCLE_MS = CYCLE_MS + 2;
-                while (gamepad2.dpad_up) {}
-            } else if (gamepad2.dpad_down) {
-                CYCLE_MS = CYCLE_MS - 2;
-                while (gamepad2.dpad_down) {}
-            } */
-
-            // Display the current value
-            telemetry.addData("Servo 1 Position", "%5.2f", position1);
-            telemetry.addData("Servo 2 Position", "%5.2f", position2);
-            telemetry.addData(">", "Press Stop to end test." );
-            telemetry.update();
-
-            // Set the servo to the new position and pause;
             servo1.setPosition(position1);
             servo2.setPosition(position2);
-            sleep(CYCLE_MS);
-            idle();
+            myTimer.reset();
+        }
 
-             if (gamepad2.right_trigger > 0.75) {
-                intakeMotor.setPower(0.75);
-            } else if (gamepad2.left_trigger > 0.75) {
-                intakeMotor.setPower(-0.75);
-            } else if (gamepad2.x) {
-                intakeMotor.setPower(0);
-            }
-
-            if (gamepad1.right_bumper) {
-                elevator.setPower(0.5);
-            } else if (gamepad1.left_bumper) {
-                elevator.setPower(0);
-            }
-
-            telemetry.addLine("Press A to reset Yaw");
-            telemetry.addLine("Hold left bumper to drive in robot relative");
-            telemetry.addLine("The left joystick sets the robot direction");
-            telemetry.addLine("Moving the right joystick left and right turns the robot");
-
-            // If you press the A button, then you reset the Yaw to be zero from the way
-            // the robot is currently pointing
-            if (gamepad1.a) {
-                imu.resetYaw();
-            }
-            // If you press the left bumper, you get a drive from the point of view of the robot
-            // (much like driving an RC vehicle)
-            if (gamepad1.left_bumper) {
-                // This calculates the power needed for each wheel based on the amount of forward,
-                // strafe right, and rotate
-                double frontLeftPower = -gamepad1.left_stick_y + gamepad1.left_stick_x + -gamepad1.right_stick_x;
-                double frontRightPower = -gamepad1.left_stick_y - gamepad1.left_stick_x - -gamepad1.right_stick_x;
-                double backRightPower = -gamepad1.left_stick_y + gamepad1.left_stick_x - -gamepad1.right_stick_x;
-                double backLeftPower = -gamepad1.left_stick_y - gamepad1.left_stick_x + -gamepad1.right_stick_x;
-
-                double maxPower = 1.0;
-                double maxSpeed = 1.0;  // make this slower for outreaches
-
-                // This is needed to make sure we don't pass > 1.0 to any wheel
-                // It allows us to keep all of the motors in proportion to what they should
-                // be and not get clipped
-                maxPower = Math.max(maxPower, Math.abs(frontLeftPower));
-                maxPower = Math.max(maxPower, Math.abs(frontRightPower));
-                maxPower = Math.max(maxPower, Math.abs(backRightPower));
-                maxPower = Math.max(maxPower, Math.abs(backLeftPower));
-
-                // We multiply by maxSpeed so that it can be set lower for outreaches
-                // When a young child is driving the robot, we may not want to allow full
-                // speed.
-                frontLeftDrive.setPower(maxSpeed * (frontLeftPower / maxPower));
-                frontRightDrive.setPower(maxSpeed * (frontRightPower / maxPower));
-                backLeftDrive.setPower(maxSpeed * (backLeftPower / maxPower));
-                backRightDrive.setPower(maxSpeed * (backRightPower / maxPower));
+        //advanced (faster or slower shooting rate)
+        if (gamepad2.options) {
+            if (gamepad2.dpad_up) {
+                if (lastInput5 == 0) {
+                    CYCLE_MS = CYCLE_MS + 2;
+                }
+                lastInput5 = 1;
             } else {
-                // First, convert direction being asked to drive to polar coordinates
-                double theta = Math.atan2(-gamepad1.left_stick_y, gamepad1.left_stick_x);
-                double r = Math.hypot(gamepad1.left_stick_x, -gamepad1.left_stick_y);
-
-                // Second, rotate angle by the angle the robot is pointing
-                theta = AngleUnit.normalizeRadians(theta -
-                        imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS));
-
-                // Third, convert back to cartesian
-                double newForward = r * Math.sin(theta);
-                double newRight = r * Math.cos(theta);
-
-                // Finally, call the drive method with robot relative forward and right amounts
-
-                // This calculates the power needed for each wheel based on the amount of forward,
-                // strafe right, and rotate
-                double frontLeftPower = newForward + newRight + gamepad1.right_stick_x;
-                double frontRightPower = newForward - newRight - gamepad1.right_stick_x;
-                double backRightPower = newForward + newRight - gamepad1.right_stick_x;
-                double backLeftPower = newForward - newRight + gamepad1.right_stick_x;
-
-                double maxPower = 1.0;
-                double maxSpeed = 1.0;  // make this slower for outreaches
-
-                // This is needed to make sure we don't pass > 1.0 to any wheel
-                // It allows us to keep all of the motors in proportion to what they should
-                // be and not get clipped
-                maxPower = Math.max(maxPower, Math.abs(frontLeftPower));
-                maxPower = Math.max(maxPower, Math.abs(frontRightPower));
-                maxPower = Math.max(maxPower, Math.abs(backRightPower));
-                maxPower = Math.max(maxPower, Math.abs(backLeftPower));
-
-                // We multiply by maxSpeed so that it can be set lower for outreaches
-                // When a young child is driving the robot, we may not want to allow full
-                // speed.
-                frontLeftDrive.setPower(maxSpeed * (frontLeftPower / maxPower));
-                frontRightDrive.setPower(maxSpeed * (frontRightPower / maxPower));
-                backLeftDrive.setPower(maxSpeed * (backLeftPower / maxPower));
-                backRightDrive.setPower(maxSpeed * (backRightPower / maxPower));
-
+                lastInput5 = 0;
+            }
+            if (gamepad2.dpad_down) {
+                if (lastInput6 == 0) {
+                    CYCLE_MS = CYCLE_MS - 2;
+                }
+                lastInput6 = 1;
+            } else {
+                lastInput6 = 0;
             }
         }
 
+        //data
+        telemetry.addData("Servo 1 Position", "%5.2f", position1);
+        telemetry.addData("Servo 2 Position", "%5.2f", position2);
+        telemetry.update();
     }
 }
+
