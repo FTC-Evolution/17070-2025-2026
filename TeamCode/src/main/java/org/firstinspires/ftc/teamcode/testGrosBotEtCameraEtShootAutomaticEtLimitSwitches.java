@@ -20,9 +20,11 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import java.util.List;
 
+import com.qualcomm.robotcore.hardware.DigitalChannel;
 
-@TeleOp(name = "GrosBot+", group = "Test")
-public class testGrosBotEtCamera extends LinearOpMode {
+
+@TeleOp(name = "GrosBot+++", group = "Test")
+public class testGrosBotEtCameraEtShootAutomaticEtLimitSwitches extends LinearOpMode {
     double plusOnePower = 0.0;
     DcMotor frontLeftDrive;
     DcMotor frontRightDrive;
@@ -39,6 +41,7 @@ public class testGrosBotEtCamera extends LinearOpMode {
     static final double MAX_POS = 1.0;     // Maximum rotational position
     static final double MIN_POS = -1.0;     // Minimum rotational position
     ElapsedTime myTimer = new ElapsedTime();
+    ElapsedTime automaticTimer = new ElapsedTime();
     // Define class members
     Servo servo1;
     Servo servo2;
@@ -72,6 +75,9 @@ public class testGrosBotEtCamera extends LinearOpMode {
      */
     private VisionPortal visionPortal;
 
+    DigitalChannel limitSwitchLeft;
+    DigitalChannel limitSwitchRight;
+
     @Override
     public void runOpMode() throws InterruptedException {
         initialization();
@@ -91,6 +97,8 @@ public class testGrosBotEtCamera extends LinearOpMode {
 
             //automatic
             camera();
+            limitSwitches();
+            automaticShooting();
             telemetry.update();
         }
     }
@@ -110,6 +118,11 @@ public class testGrosBotEtCamera extends LinearOpMode {
         servo2 = hardwareMap.get(Servo.class, "servo2");
         doorLeft = hardwareMap.get(Servo.class, "doorLeft");
         doorRight = hardwareMap.get(Servo.class, "doorRight");
+
+        limitSwitchLeft = hardwareMap.get(DigitalChannel.class, "limitSwitchLeft");
+        limitSwitchLeft.setMode(DigitalChannel.Mode.INPUT);
+        limitSwitchRight = hardwareMap.get(DigitalChannel.class, "limitSwitchRight");
+        limitSwitchRight.setMode(DigitalChannel.Mode.INPUT);
 
 
         backRightDrive.setDirection(DcMotor.Direction.REVERSE);
@@ -473,6 +486,37 @@ public class testGrosBotEtCamera extends LinearOpMode {
 
     }   // end method telemetryAprilTag()
 
+    void limitSwitches() {
+        if (limitSwitchLeft.getState()) {
+            telemetry.addData("Switch Left", "PRESSED / TRIGGERED");
+            // Insert action here: e.g., motor.setPower(0);
+        } else {
+            telemetry.addData("Switch Left", "Open / Not Pressed");
+        }
+
+        if (limitSwitchRight.getState()) {
+            telemetry.addData("Switch Right", "PRESSED / TRIGGERED");
+            // Insert action here: e.g., motor.setPower(0);
+        } else {
+            telemetry.addData("Switch Right", "Open / Not Pressed");
+        }
+
+    }
+
+    void automaticShooting() {
+        if (gamepad2.share) {
+            if (gamepad2.x) {
+                automaticTimer.reset();
+                servo2.setPosition(servo2.getPosition() - 0.5);
+                if (automaticTimer.milliseconds() >= 500 && servo1.getPosition() < MAX_POS) {
+                    servo1.setPosition(MAX_POS);
+                } else if (automaticTimer.milliseconds() >= 1000) {
+                    servo2.setPosition(MIN_POS);
+                }
+            }
+        }
+    }
 }   // end class
+
 
 
