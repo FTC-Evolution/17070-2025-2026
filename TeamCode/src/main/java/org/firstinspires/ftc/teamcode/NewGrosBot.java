@@ -53,7 +53,7 @@ public class NewGrosBot extends LinearOpMode {
     public void runOpMode() throws InterruptedException {
         initialization();
         waitForStart();
-        if (isStopRequested()) return;
+         if (isStopRequested()) return;
 
         while (opModeIsActive()) {
             //gamepad1
@@ -316,7 +316,7 @@ public class NewGrosBot extends LinearOpMode {
         }
 
         //advanced (faster or slower shooting rate)
-        if (gamepad2.options) {
+        if (gamepad2.options ) {
             if (gamepad2.dpad_up) {
                 if (lastInput5 == 0) {
                     CYCLE_MS = CYCLE_MS + 2;
