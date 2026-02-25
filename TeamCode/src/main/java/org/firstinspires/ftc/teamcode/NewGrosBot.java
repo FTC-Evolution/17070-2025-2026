@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
+import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.IMU;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -74,6 +75,9 @@ public class NewGrosBot extends LinearOpMode {
 
     ElapsedTime telemetryTimer = new ElapsedTime();
 
+    DigitalChannel limitSwitchLeft;
+    DigitalChannel limitSwitchRight;
+
     @Override
     public void runOpMode() throws InterruptedException {
         initialization();
@@ -112,6 +116,10 @@ public class NewGrosBot extends LinearOpMode {
         doorLeft = hardwareMap.get(Servo.class, "doorLeft");
         doorRight = hardwareMap.get(Servo.class, "doorRight");
 
+        limitSwitchLeft = hardwareMap.get(DigitalChannel.class, "limitSwitchLeft");
+        limitSwitchLeft.setMode(DigitalChannel.Mode.INPUT);
+        limitSwitchRight = hardwareMap.get(DigitalChannel.class, "limitSwitchRight");
+        limitSwitchRight.setMode(DigitalChannel.Mode.INPUT);
 
         backRightDrive.setDirection(DcMotor.Direction.REVERSE);
         frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
@@ -473,6 +481,23 @@ public class NewGrosBot extends LinearOpMode {
             telemetryTimer.reset();
         }
     }   // end method telemetryAprilTag()
+
+    void limitSwitches() {
+        if (limitSwitchLeft.getState()) {
+            telemetry.addData("Switch Left", "Open / Not Pressed");
+            // Insert action here: e.g., motor.setPower(0);
+        } else {
+            telemetry.addData("Switch Left", "PRESSED / TRIGGERED");
+        }
+
+        if (limitSwitchRight.getState()) {
+            telemetry.addData("Switch Right", "Open / Not Pressed");
+            // Insert action here: e.g., motor.setPower(0);
+        } else {
+            telemetry.addData("Switch Right", "PRESSED / TRIGGERED");
+        }
+
+    }
 
 }   // end class
 
