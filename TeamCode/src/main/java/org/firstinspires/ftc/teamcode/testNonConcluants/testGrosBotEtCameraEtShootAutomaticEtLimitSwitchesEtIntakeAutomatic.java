@@ -1,6 +1,7 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.testNonConcluants;
 
 //😎
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -22,9 +23,9 @@ import java.util.List;
 
 import com.qualcomm.robotcore.hardware.DigitalChannel;
 
-
-@TeleOp(name = "GrosBot+++", group = "Test")
-public class testGrosBotEtCameraEtShootAutomaticEtLimitSwitches extends LinearOpMode {
+@Disabled
+@TeleOp(name = "GrosBot+++++", group = "Test")
+public class testGrosBotEtCameraEtShootAutomaticEtLimitSwitchesEtIntakeAutomatic extends LinearOpMode {
     double plusOnePower = 0.0;
     DcMotor frontLeftDrive;
     DcMotor frontRightDrive;
@@ -39,7 +40,7 @@ public class testGrosBotEtCameraEtShootAutomaticEtLimitSwitches extends LinearOp
     static final double INCREMENT = 0.01;     // amount to slew servo each CYCLE_MS cycle
     int CYCLE_MS = 17;     // period of each cycle
     static final double MAX_POS = 1.0;     // Maximum rotational position
-    static final double MIN_POS = -1.0;     // Minimum rotational position
+    static final double MIN_POS = 0.0;     // Minimum rotational position
     ElapsedTime myTimer = new ElapsedTime();
     ElapsedTime automaticTimer = new ElapsedTime();
     // Define class members
@@ -57,6 +58,10 @@ public class testGrosBotEtCameraEtShootAutomaticEtLimitSwitches extends LinearOp
     int lastInput4 = 0;
     int lastInput5 = 0;
     int lastInput6 = 0;
+
+    //limit switches
+    int lastInput7 = 0;
+    int lastInput8 = 0;
 
     IMU imu;
 
@@ -77,6 +82,7 @@ public class testGrosBotEtCameraEtShootAutomaticEtLimitSwitches extends LinearOp
 
     DigitalChannel limitSwitchLeft;
     DigitalChannel limitSwitchRight;
+    int ballsIntaked = 0;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -487,18 +493,42 @@ public class testGrosBotEtCameraEtShootAutomaticEtLimitSwitches extends LinearOp
     }   // end method telemetryAprilTag()
 
     void limitSwitches() {
+        if (gamepad2.share) {
+            if (gamepad2.triangle) {
+                ballsIntaked = 0;
+                doorLeft.setPosition(1);
+                doorRight.setPosition(0.33);
+            }
+        }
+
         if (limitSwitchLeft.getState()) {
             telemetry.addData("Switch Left", "PRESSED / TRIGGERED");
-            // Insert action here: e.g., motor.setPower(0);
+            if (lastInput7 == 0) {
+                if (ballsIntaked ==  1) {
+                    doorLeft.setPosition(0.67);
+                    doorRight.setPosition(0);
+                }
+                ballsIntaked = ballsIntaked + 1;
+                lastInput7 = 1;
+            }
         } else {
             telemetry.addData("Switch Left", "Open / Not Pressed");
+            lastInput7 = 0;
         }
 
         if (limitSwitchRight.getState()) {
             telemetry.addData("Switch Right", "PRESSED / TRIGGERED");
-            // Insert action here: e.g., motor.setPower(0);
+            if (lastInput8 == 0) {
+                if (ballsIntaked ==  2) {
+                    doorLeft.setPosition(1);
+                    doorRight.setPosition(0.33);
+                }
+                ballsIntaked = ballsIntaked + 1;
+                lastInput8 = 1;
+            }
         } else {
             telemetry.addData("Switch Right", "Open / Not Pressed");
+            lastInput8 = 1;
         }
 
     }

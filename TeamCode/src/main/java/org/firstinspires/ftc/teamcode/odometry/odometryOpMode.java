@@ -53,7 +53,7 @@ public class odometryOpMode extends LinearOpMode {
         odo = this.hardwareMap.get(GoBildaPinpointDriver.class, "odo");
         odo.setOffsets(odoOffsetX, odoOffsetY);
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);
+        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.REVERSED);
         odo.resetPosAndIMU();
         nav.setDriveType(DriveToPoint.DriveType.MECANUM);
 
@@ -63,8 +63,9 @@ public class odometryOpMode extends LinearOpMode {
         // If your robot moves backwards when commanded to go forwards,
         // reverse the left side instead.
         // See the note about this earlier on this page.
-        frontRight.setDirection(DcMotorSimple.Direction.REVERSE);
-        backRight.setDirection(DcMotorSimple.Direction.REVERSE);
+        backRight.setDirection(DcMotor.Direction.REVERSE);
+        frontLeft.setDirection(DcMotor.Direction.REVERSE);
+
 
         // Retrieve the IMU from the hardware map
         IMU imu = hardwareMap.get(IMU.class, "imu");
@@ -137,7 +138,7 @@ public class odometryOpMode extends LinearOpMode {
             relativeHeadingToBlueGoal = absoluteHeadingToBlueGoal - odo.getPosition().getHeading(AngleUnit.DEGREES);
             telemetry.addData("Absolute heading to blue goal", "%5.2f", odo.getPosition().getHeading(AngleUnit.DEGREES));
             telemetry.addData("Relative heading to blue goal", "%5.2f", odo.getPosition().getHeading(AngleUnit.DEGREES));
-
+            telemetry.update();
         }
     }
     public boolean isAtTarget(double posTolerance, double velTolerance, double angleTolerance) {
