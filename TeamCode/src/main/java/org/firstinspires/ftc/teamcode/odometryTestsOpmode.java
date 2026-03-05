@@ -22,8 +22,8 @@ public class odometryOpMode extends LinearOpMode {
     //double xStartingPosition = 63.25;
     //double yStartingPosition = -63.15;
     //double headingStartingPosition = 270.0;
-    //double odoOffsetX = 0;
-    //double odoOffsetY = 0;
+    double odoOffsetX = 0;
+    double odoOffsetY = 0;
 
     //double absoluteHeadingToBlueGoal = 0;
     //double relativeHeadingToBlueGoal = 0;
