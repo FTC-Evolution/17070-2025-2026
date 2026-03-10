@@ -1,12 +1,12 @@
 package org.firstinspires.ftc.teamcode.odometry;
 
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
+import com.qualcomm.robotcore.util.ElapsedTime;
+
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
@@ -21,9 +21,10 @@ public class odometryOpMode extends LinearOpMode {
     //Depart dans la loading zone rouge, face au human player
     double xStartingPosition = 63.25;
     double yStartingPosition = -63.15;
-    double headingStartingPosition = 270.0;
-    double odoOffsetX = 0;
-    double odoOffsetY = 0;
+    double headingStartingPosition = -90.00;
+
+    double odoOffsetX = 194.68;
+    double odoOffsetY = -20.85;
 
     double absoluteHeadingToBlueGoal = 0;
     double relativeHeadingToBlueGoal = 0;
@@ -35,9 +36,11 @@ public class odometryOpMode extends LinearOpMode {
     DcMotor frontRight;
     DcMotor backRight;
     Pose2D currentTargetPose = new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0);
-    Pose2D targetPoseShootFar = new Pose2D(DistanceUnit.INCH, 59, -13, AngleUnit.DEGREES, 204.25);
-    Pose2D targetPoseShootClose = new Pose2D(DistanceUnit.INCH, -20, 0, AngleUnit.DEGREES, 234.16);
-    Pose2D targetPoseEndgame = new Pose2D(DistanceUnit.INCH, 39, 33, AngleUnit.DEGREES, 180);
+    Pose2D targetPoseShootFar = new Pose2D(DistanceUnit.INCH, 59, -13, AngleUnit.DEGREES, -155.75);
+    Pose2D targetPoseShootClose = new Pose2D(DistanceUnit.INCH, -20, 0, AngleUnit.DEGREES, -125.84);
+    Pose2D targetPoseEndgame = new Pose2D(DistanceUnit.INCH, 39, 33, AngleUnit.DEGREES, 90);
+
+    ElapsedTime telemetryTimer = new ElapsedTime();
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -53,11 +56,9 @@ public class odometryOpMode extends LinearOpMode {
         odo = this.hardwareMap.get(GoBildaPinpointDriver.class, "odo");
         odo.setOffsets(odoOffsetX, odoOffsetY);
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.REVERSED);
+        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);  // <-------À changer
         odo.resetPosAndIMU();
         nav.setDriveType(DriveToPoint.DriveType.MECANUM);
-
-
 
         // Reverse the right side motors. This may be wrong for your setup.
         // If your robot moves backwards when commanded to go forwards,
@@ -73,16 +74,17 @@ public class odometryOpMode extends LinearOpMode {
         IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(
                 RevHubOrientationOnRobot.LogoFacingDirection.RIGHT,
                 RevHubOrientationOnRobot.UsbFacingDirection.UP));
-        
+
         // Without this, the REV Hub's orientation is assumed to be logo up / USB forward
         imu.initialize(parameters);
-
+        odo.setPosition(new Pose2D(DistanceUnit.INCH, xStartingPosition, yStartingPosition, AngleUnit.DEGREES,headingStartingPosition));
 
         waitForStart();
-        odo.setPosition(new Pose2D(DistanceUnit.INCH,xStartingPosition, yStartingPosition, AngleUnit.DEGREES,headingStartingPosition));
+
+        odo.setPosition(new Pose2D(DistanceUnit.INCH, xStartingPosition, yStartingPosition, AngleUnit.DEGREES,headingStartingPosition));
 
         if (isStopRequested()) return;
-        
+
         while (opModeIsActive()) {
             double y = -gamepad1.left_stick_y; // Remember, Y stick value is reversed
             double x = gamepad1.left_stick_x;
@@ -121,7 +123,6 @@ public class odometryOpMode extends LinearOpMode {
                 currentTargetPose = targetPoseShootFar;
                 driveToTarget(currentTargetPose, 0.5);
             }
-
             if (gamepad1.dpad_right) {
                 currentTargetPose = targetPoseShootClose;
                 driveToTarget(currentTargetPose, 0.5);
@@ -131,14 +132,23 @@ public class odometryOpMode extends LinearOpMode {
                 driveToTarget(currentTargetPose, 0.5);
             }
 
-            telemetry.addData("X Position", "%5.2f", odo.getPosition().getX(DistanceUnit.INCH));
-            telemetry.addData("Y Position", "%5.2f", odo.getPosition().getY(DistanceUnit.INCH));
-            telemetry.addData("Heading", "%5.2f", odo.getPosition().getHeading(AngleUnit.DEGREES));
-            absoluteHeadingToBlueGoal = (Math.atan((-72 - odo.getPosition().getY(DistanceUnit.INCH)) / (-72 - odo.getPosition().getX(DistanceUnit.INCH))) + Math.PI) * 180 / Math.PI;
-            relativeHeadingToBlueGoal = absoluteHeadingToBlueGoal - odo.getPosition().getHeading(AngleUnit.DEGREES);
-            telemetry.addData("Absolute heading to blue goal", "%5.2f", odo.getPosition().getHeading(AngleUnit.DEGREES));
-            telemetry.addData("Relative heading to blue goal", "%5.2f", odo.getPosition().getHeading(AngleUnit.DEGREES));
-            telemetry.update();
+            if (gamepad1.y) {
+                driveToTarget(currentTargetPose, 0.75);
+            }
+
+            if (telemetryTimer.milliseconds() > 100) {
+                odo.update();
+                telemetry.addData("X Position", "%5.2f", odo.getPosition().getX(DistanceUnit.INCH));
+                telemetry.addData("Y Position", "%5.2f", odo.getPosition().getY(DistanceUnit.INCH));
+                telemetry.addData("Heading", "%5.2f", odo.getPosition().getHeading(AngleUnit.DEGREES));
+                //absoluteHeadingToBlueGoal = (Math.atan((-72 - odo.getPosition().getY(DistanceUnit.INCH)) / (-72 - odo.getPosition().getX(DistanceUnit.INCH))) + Math.PI) * 180 / Math.PI;
+                //relativeHeadingToBlueGoal = absoluteHeadingToBlueGoal - odo.getPosition().getHeading(AngleUnit.DEGREES);
+                //telemetry.addData("Absolute heading to blue goal", "%5.2f", odo.getPosition().getHeading(AngleUnit.DEGREES));
+                //telemetry.addData("Relative heading to blue goal", "%5.2f", odo.getPosition().getHeading(AngleUnit.DEGREES));
+                telemetry.addData("Are we there yet?", isAtTarget(0.5, 0.5, 1));
+                telemetry.update();
+                telemetryTimer.reset();
+            }
         }
     }
     public boolean isAtTarget(double posTolerance, double velTolerance, double angleTolerance) {

@@ -51,7 +51,7 @@
 
 //test pour odometry
 
-package org.firstinspires.ftc.teamcode.inutile;
+package org.firstinspires.ftc.teamcode.zzz_inutile;
 
 import static org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.MM;
 import static org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit.DEGREES;

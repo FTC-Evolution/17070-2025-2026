@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 //😎
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -27,8 +28,8 @@ import java.util.List;
 import java.util.Locale;
 
 
-@TeleOp
-public class NewGrosBot extends LinearOpMode {
+@Autonomous
+public class autonomeTest extends LinearOpMode {
     //Defining Motors
     DcMotor frontLeftDrive;
     DcMotor frontRightDrive;
@@ -51,7 +52,7 @@ public class NewGrosBot extends LinearOpMode {
     ElapsedTime automaticShootingTimer = new ElapsedTime();
     boolean yWasPressed = false;
     int ballsShot = 0;
-    static final double CYCLETIME_MS = 750;
+    static final double CYCLETIME_MS = 2000;
 
 
     //Defining Servos
@@ -114,8 +115,8 @@ public class NewGrosBot extends LinearOpMode {
     //Odometry
     //Depart dans la loading zone rouge, face au human player
     double xStartingPosition = 63.25;
-    double yStartingPosition = -63.15;
-    double headingStartingPosition = -90.00;
+    double yStartingPosition = -24;
+    double headingStartingPosition = 180.00;
 
     double odoOffsetX = 194.68;
     double odoOffsetY = -20.85;
@@ -130,6 +131,8 @@ public class NewGrosBot extends LinearOpMode {
     Pose2D targetPoseShootClose = new Pose2D(DistanceUnit.INCH, -20, 0, AngleUnit.DEGREES, -125.84);
     Pose2D targetPoseEndgame = new Pose2D(DistanceUnit.INCH, 39, 33, AngleUnit.DEGREES, 90);
 
+    ElapsedTime bigTimer = new ElapsedTime();
+
     @Override
     public void runOpMode() throws InterruptedException {
         initialization();
@@ -140,22 +143,22 @@ public class NewGrosBot extends LinearOpMode {
         if (isStopRequested()) return;
 
         while (opModeIsActive()) {
-            //gamepad1
-            drive();
-            intake();
-            lift();
-            odometry();
-
-            //gamepad2
-            sorting();
-            shooter();
-            shootAutomatic();
-
-            //automatic
-            camera();
-            limitSwitches();
-            countBallsLaunched();
-            sendingAllTelemetry();
+            if (bigTimer.seconds() < 4) {
+                currentTargetPose = targetPoseShootFar;
+                driveToTarget(currentTargetPose, 0.5);
+            } else if (bigTimer.seconds() < 8) {
+                launchVelocity = 900 + plusOnePower;
+                highMotor.setVelocity(launchVelocity);
+                lowMotor.setVelocity(launchVelocity);
+            } else if (bigTimer.seconds() < 13) {
+                shootIndividual();
+            } else if (bigTimer.seconds() < 20) {
+                highMotor.setVelocity(0);
+                lowMotor.setVelocity(0);
+            } else if (bigTimer.seconds() < 30) {
+                currentTargetPose = new Pose2D(DistanceUnit.INCH, 63.25, -63.15, AngleUnit.DEGREES, -90);
+                driveToTarget(currentTargetPose, 0.5);
+            }
         }
     }
 

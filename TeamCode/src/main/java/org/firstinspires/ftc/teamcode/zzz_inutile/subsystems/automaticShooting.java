@@ -1,29 +1,15 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.zzz_inutile.subsystems;
 
 //😎
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
-import com.qualcomm.robotcore.hardware.DigitalChannel;
-import com.qualcomm.robotcore.hardware.IMU;
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import android.util.Size;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.vision.VisionPortal;
-import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
-import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
-import java.util.List;
-
-
+@Disabled
 @TeleOp
-public class NewGrosBot extends LinearOpMode {
+public class automaticShooting extends LinearOpMode {
 
     static final double INCREMENT = 0.01;     // amount to slew servo each CYCLE_MS cycle
     int CYCLE_MS = 17;     // period of each cycle
@@ -36,9 +22,13 @@ public class NewGrosBot extends LinearOpMode {
     double position1 = MAX_POS; // Start at beginning position
     double position2 = MIN_POS; // Start at beginning position
 
+    //to copy
     ElapsedTime automaticShootingTimer = new ElapsedTime(); 
 
-    boolean yWasPressed = false;   
+    boolean yWasPressed = false;
+    int ballsShot = 0;
+    static final double CYCLETIME_MS = 750;
+    //end
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -49,7 +39,7 @@ public class NewGrosBot extends LinearOpMode {
 
         while (opModeIsActive()) {
             servosShooting();
-            automaticTest();
+            shootAutomatic();
         }
     }
 
@@ -97,43 +87,53 @@ public class NewGrosBot extends LinearOpMode {
         }
     }
 
-    void automaticTest() {
-        if (myTimer.milliseconds() >= CYCLE_MS) {
-            if (gamepad2.y) {
-                if (yWasPressed == false) {
-                    automaticShootingTimer.reset();
+    void shootAutomatic() {
+        if (gamepad2.y) {
+            if (yWasPressed == false) {
+                automaticShootingTimer.reset();
+            }
+            yWasPressed = true;
+            telemetry.addLine("Y is pressed");
+            telemetry.update();
+            shootIndividual();
+        } else {
+            yWasPressed = false;
+        }
+    }
+
+    void shootIndividual() {
+        if (automaticShootingTimer.milliseconds() < CYCLETIME_MS) { //servo1 (right)
+            telemetry.addLine("0 seconds");
+            telemetry.update();
+            if (ballsShot == 0) {
+                position1 -= 0.4;
+                if (position1 <= MIN_POS) {
+                    position1 = MIN_POS;
                 }
-                    yWasPressed = true;
-                    
-                    //servo1 (right)
-                    if (automaticShootingTimer.milliseconds < 2000) {
-                        position1 += INCREMENT;
-                        if (position1 >= MAX_POS) {
-                            position1 = MAX_POS;
-                        }
-                    }
-
-                    //servo2 (left)
-                    if (automaticShootingTimer.milliseconds > 2000 && automaticShootingTimer.milliseconds < 4000) {
-                        position2 -= INCREMENT;
-                        if (position2 <= MIN_POS) {
-                            position2 = MIN_POS;
-                        }
-                    }
-
-                    //servo1 (right)
-                    if (automaticShootingTimer.milliseconds > 4000) {
-                        position1 += INCREMENT;
-                        if (position1 >= MAX_POS) {
-                            position1 = MAX_POS;
-                        }
-                    }
-
-                    servo1.setPosition(position1);
-                    servo2.setPosition(position2);
-                    myTimer.reset();
-            } else {
-                yWasPressed = false;
+                servo1.setPosition(position1);
+                ballsShot += 1;
+                telemetry.addLine("1 ball shot");
+                telemetry.update();
+            }
+        } else if (automaticShootingTimer.milliseconds() < (2 * CYCLETIME_MS)) { //servo2 (left)
+            telemetry.addLine("2 seconds");
+            telemetry.update();
+            if (ballsShot == 1) {
+                position2 = MAX_POS;
+                servo2.setPosition(position2);
+                ballsShot  += 1;
+                telemetry.addLine("2 balls shot");
+                telemetry.update();
+            }
+        } else { //servo1 (right)
+            telemetry.addLine("4 seconds");
+            telemetry.update();
+            if (ballsShot == 2) {
+                position1 = MIN_POS;
+                servo1.setPosition(position1);
+                ballsShot += 1;
+                telemetry.addLine("3 balls shot");
+                telemetry.update();
             }
         }
     }
