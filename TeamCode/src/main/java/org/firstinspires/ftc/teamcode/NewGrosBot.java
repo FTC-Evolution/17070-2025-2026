@@ -220,9 +220,6 @@ public class NewGrosBot extends LinearOpMode {
         odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);  // <-------À changer
         odo.resetPosAndIMU();
         nav.setDriveType(DriveToPoint.DriveType.MECANUM);
-
-        odo.setPosition(new Pose2D(DistanceUnit.INCH, xStartingPosition, yStartingPosition, AngleUnit.DEGREES,headingStartingPosition));
-
         initAprilTag();
     }
     void drive() {
