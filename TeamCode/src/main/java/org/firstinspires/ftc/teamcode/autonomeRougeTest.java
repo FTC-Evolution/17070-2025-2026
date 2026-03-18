@@ -1,8 +1,9 @@
 package org.firstinspires.ftc.teamcode;
 
 //😎
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -27,8 +28,8 @@ import java.util.List;
 import java.util.Locale;
 
 
-@TeleOp
-public class NewGrosBot extends LinearOpMode {
+@Autonomous
+public class autonomeRougeTest extends LinearOpMode {
     //Defining Motors
     DcMotor frontLeftDrive;
     DcMotor frontRightDrive;
@@ -41,11 +42,6 @@ public class NewGrosBot extends LinearOpMode {
 
     //Variables for shooter
     double plusOnePower  = 0.0;
-    static final double INCREMENT = 0.01;     // amount to slew servo each CYCLE_MS cycle
-    int CYCLE_MS = 17;     // period of each cycle
-    static final double MAX_POS = 1.0;     // Maximum rotational position
-    static final double MIN_POS = 0.0;     // Minimum rotational position
-    ElapsedTime myTimer = new ElapsedTime();
 
     //Automatic shoot
     ElapsedTime automaticShootingTimer = new ElapsedTime();
@@ -55,10 +51,8 @@ public class NewGrosBot extends LinearOpMode {
 
 
     //Defining Servos
-    Servo servo1;
-    Servo servo2;
-    double position1 = MAX_POS; // Start at beginning position
-    double position2 = MIN_POS; // Start at beginning position
+    CRServo servo1;
+    CRServo servo2;
 
     //Doors
     Servo doorLeft;
@@ -114,8 +108,8 @@ public class NewGrosBot extends LinearOpMode {
     //Odometry
     //Depart dans la loading zone rouge, face au human player
     double xStartingPosition = 63.25;
-    double yStartingPosition = -63.15;
-    double headingStartingPosition = -90.00;
+    double yStartingPosition = 24;
+    double headingStartingPosition = 180.00;
 
     double odoOffsetX = 194.68;
     double odoOffsetY = -20.85;
@@ -126,36 +120,45 @@ public class NewGrosBot extends LinearOpMode {
     GoBildaPinpointDriver odo;
     DriveToPoint nav;
     Pose2D currentTargetPose = new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0);
-    Pose2D targetPoseShootFar = new Pose2D(DistanceUnit.INCH, 59, -13, AngleUnit.DEGREES, -155.75);
-    Pose2D targetPoseShootClose = new Pose2D(DistanceUnit.INCH, -20, 0, AngleUnit.DEGREES, -125.84);
-    Pose2D targetPoseEndgame = new Pose2D(DistanceUnit.INCH, 39, 33, AngleUnit.DEGREES, 90);
+    Pose2D targetPoseShootFar = new Pose2D(DistanceUnit.INCH, 59, 13, AngleUnit.DEGREES, 160);
+    Pose2D targetPoseShootClose = new Pose2D(DistanceUnit.INCH, -20, 0, AngleUnit.DEGREES, 125);
+    Pose2D targetPoseEndgame = new Pose2D(DistanceUnit.INCH, 39, -33, AngleUnit.DEGREES, 90);
+    ElapsedTime bigTimer = new ElapsedTime();
 
     @Override
     public void runOpMode() throws InterruptedException {
         initialization();
 
+        currentTargetPose = targetPoseShootClose;
         waitForStart();
         odo.setPosition(new Pose2D(DistanceUnit.INCH, xStartingPosition, yStartingPosition, AngleUnit.DEGREES,headingStartingPosition));
 
         if (isStopRequested()) return;
 
-        while (opModeIsActive()) {
-            //gamepad1
-            drive();
-            intake();
-            lift();
-            odometry();
-
-            //gamepad2
-            sorting();
-            shooter();
-            shootAutomatic();
-
-            //automatic
-            camera();
-            limitSwitches();
-            countBallsLaunched();
-            sendingAllTelemetry();
+        if (opModeIsActive()) {
+            while (bigTimer.seconds() < 4) {
+                driveToTarget(targetPoseShootClose, 0.5);
+            }
+            while (bigTimer.seconds() < 8) {
+                frontLeftDrive.setPower(0);
+                frontRightDrive.setPower(0);
+                backLeftDrive.setPower(0);
+                backRightDrive.setPower(0);
+                launchVelocity = 700 + plusOnePower;
+                highMotor.setVelocity(launchVelocity);
+                lowMotor.setVelocity(launchVelocity);
+            }
+            while (bigTimer.seconds() < 13) {
+                servo2.setPower(1);
+            }
+            while (bigTimer.seconds() < 20) {
+                highMotor.setVelocity(0);
+                lowMotor.setVelocity(0);
+            }
+            while (bigTimer.seconds() < 30) {
+                currentTargetPose = new Pose2D(DistanceUnit.INCH, 63.25, 63.15, AngleUnit.DEGREES,  90);
+                driveToTarget(currentTargetPose, 0.5);
+            }
         }
     }
 
@@ -170,8 +173,8 @@ public class NewGrosBot extends LinearOpMode {
         intakeMotor = hardwareMap.dcMotor.get("intakeMotor");
         elevator = hardwareMap.dcMotor.get("elevatorMotor");
 
-        servo1 = hardwareMap.get(Servo.class, "servo1");
-        servo2 = hardwareMap.get(Servo.class, "servo2");
+        servo1 = hardwareMap.get(CRServo.class, "servo1");
+        servo2 = hardwareMap.get(CRServo.class, "servo2");
         doorLeft = hardwareMap.get(Servo.class, "doorLeft");
         doorRight = hardwareMap.get(Servo.class, "doorRight");
 
@@ -210,7 +213,7 @@ public class NewGrosBot extends LinearOpMode {
 
 
         doorLeft.setPosition(0.97);
-        doorRight.setPosition(0);
+        doorRight.setPosition(0.25);
 
         //Odometry
         nav = new DriveToPoint(this);
@@ -448,10 +451,14 @@ public class NewGrosBot extends LinearOpMode {
             dpadLeftWasPressed = false;
         }
 
+        if (gamepad2.y) {
+            launchVelocity = -700 + plusOnePower;
+        }
+
         if (gamepad2.left_bumper) {
-            launchVelocity = 700 + plusOnePower;
+            launchVelocity = 400 + plusOnePower;
         } else if (gamepad2.right_bumper) {
-            launchVelocity = 900 + plusOnePower;
+            launchVelocity = 600 + plusOnePower;
         } else if (gamepad2.b) {
             plusOnePower = 0;
             launchVelocity = 0;
@@ -462,111 +469,19 @@ public class NewGrosBot extends LinearOpMode {
     }
 
     void servosShooting() {
-        if (myTimer.milliseconds() >= CYCLE_MS) {
-            //servo1 (right)
-            if (gamepad2.right_stick_y > 0.75) {
-                position1 += INCREMENT;
-                if (position1 >= MAX_POS) {
-                    position1 = MAX_POS;
-                }
-            } else if (gamepad2.right_stick_y < -0.75) {
-                position1 -= INCREMENT;
-                if (position1 <= MIN_POS) {
-                    position1 = MIN_POS;
-                }
-            } else if (gamepad2.right_stick_button) {
-                position1 = MAX_POS;
-            }
-
-            //servo2 (left)
-            if (gamepad2.left_stick_y < -0.75) {
-                position2 += INCREMENT;
-                if (position2 >= MAX_POS) {
-                    position2 = MAX_POS;
-                }
-            } else if (gamepad2.left_stick_y > 0.75) {
-                position2 -= INCREMENT;
-                if (position2 <= MIN_POS) {
-                    position2 = MIN_POS;
-                }
-            } else if (gamepad2.left_stick_button) {
-                position2 = MIN_POS;
-            }
-
-            servo1.setPosition(position1);
-            servo2.setPosition(position2);
-            myTimer.reset();
-        }
-
-        //advanced (faster or slower shooting rate)
-        if (gamepad2.options ) {
-            if (gamepad2.dpad_up) {
-                if (!dpadUpWasPressed2) {
-                    CYCLE_MS = CYCLE_MS + 2;
-                }
-                dpadUpWasPressed2 = true;
-            } else {
-                dpadUpWasPressed2 = false;
-            }
-            if (gamepad2.dpad_down) {
-                if (!dpadDownWasPressed2) {
-                    CYCLE_MS = CYCLE_MS - 2;
-                }
-                dpadDownWasPressed2 = true;
-            } else {
-                dpadDownWasPressed2 = false;
-            }
-        }
-    }
-
-    void shootAutomatic() {
-        if (gamepad2.y) {
-            if (!yWasPressed) {
-                automaticShootingTimer.reset();
-            }
-            yWasPressed = true;
-            telemetry.addLine("Y is pressed");
-            telemetry.update();
-            shootIndividual();
+        if (gamepad2.right_stick_y > 0.75) {
+            servo1.setPower(1);
+        } else if (gamepad2.right_stick_y < -0.75) {
+            servo1.setPower(-1);
         } else {
-            yWasPressed = false;
+            servo1.setPower(0);
         }
-    }
-
-    void shootIndividual() {
-        if (automaticShootingTimer.milliseconds() < CYCLETIME_MS) { //servo1 (right)
-            telemetry.addLine("0 seconds");
-            telemetry.update();
-            if (ballsShot == 0) {
-                position1 -= 0.4;
-                if (position1 <= MIN_POS) {
-                    position1 = MIN_POS;
-                }
-                servo1.setPosition(position1);
-                ballsShot += 1;
-                telemetry.addLine("1 ball shot");
-                telemetry.update();
-            }
-        } else if (automaticShootingTimer.milliseconds() < (2 * CYCLETIME_MS)) { //servo2 (left)
-            telemetry.addLine("2 seconds");
-            telemetry.update();
-            if (ballsShot == 1) {
-                position2 = MAX_POS;
-                servo2.setPosition(position2);
-                ballsShot  += 1;
-                telemetry.addLine("2 balls shot");
-                telemetry.update();
-            }
-        } else { //servo1 (right)
-            telemetry.addLine("4 seconds");
-            telemetry.update();
-            if (ballsShot == 2) {
-                position1 = MIN_POS;
-                servo1.setPosition(position1);
-                ballsShot += 1;
-                telemetry.addLine("3 balls shot");
-                telemetry.update();
-            }
+        if (gamepad2.left_stick_y < -0.75) {
+            servo2.setPower(1);
+        } else if (gamepad2.left_stick_y > 0.75) {
+            servo2.setPower(-1);
+        } else {
+            servo2.setPower(0);
         }
     }
 
@@ -698,8 +613,8 @@ public class NewGrosBot extends LinearOpMode {
 
     private void sendingAllTelemetry() {
         if (telemetryTimer.milliseconds() >= 50) {
-            telemetry.addData("Servo 1 Position", "%5.2f", position1);
-            telemetry.addData("Servo 2 Position", "%5.2f", position2);
+            telemetry.addData("Servo 1 Position", "%5.2f", servo1.getPower());
+            telemetry.addData("Servo 2 Position", "%5.2f", servo2.getPower());
 
             telemetry.addData("High Motor Speed", highMotor.getVelocity());
             telemetry.addData("Lower Motor Speed", lowMotor.getVelocity());

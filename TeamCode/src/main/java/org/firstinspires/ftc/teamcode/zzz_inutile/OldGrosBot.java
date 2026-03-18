@@ -1,7 +1,7 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.zzz_inutile;
 
 //😎
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -27,9 +27,9 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import java.util.List;
 import java.util.Locale;
 
-
-@Autonomous
-public class autonomeTest extends LinearOpMode {
+@Disabled
+@TeleOp
+public class OldGrosBot extends LinearOpMode {
     //Defining Motors
     DcMotor frontLeftDrive;
     DcMotor frontRightDrive;
@@ -52,7 +52,7 @@ public class autonomeTest extends LinearOpMode {
     ElapsedTime automaticShootingTimer = new ElapsedTime();
     boolean yWasPressed = false;
     int ballsShot = 0;
-    static final double CYCLETIME_MS = 2000;
+    static final double CYCLETIME_MS = 750;
 
 
     //Defining Servos
@@ -115,8 +115,8 @@ public class autonomeTest extends LinearOpMode {
     //Odometry
     //Depart dans la loading zone rouge, face au human player
     double xStartingPosition = 63.25;
-    double yStartingPosition = -24;
-    double headingStartingPosition = 180.00;
+    double yStartingPosition = -63.15;
+    double headingStartingPosition = -90.00;
 
     double odoOffsetX = 194.68;
     double odoOffsetY = -20.85;
@@ -131,8 +131,6 @@ public class autonomeTest extends LinearOpMode {
     Pose2D targetPoseShootClose = new Pose2D(DistanceUnit.INCH, -20, 0, AngleUnit.DEGREES, -125.84);
     Pose2D targetPoseEndgame = new Pose2D(DistanceUnit.INCH, 39, 33, AngleUnit.DEGREES, 90);
 
-    ElapsedTime bigTimer = new ElapsedTime();
-
     @Override
     public void runOpMode() throws InterruptedException {
         initialization();
@@ -143,22 +141,22 @@ public class autonomeTest extends LinearOpMode {
         if (isStopRequested()) return;
 
         while (opModeIsActive()) {
-            if (bigTimer.seconds() < 4) {
-                currentTargetPose = targetPoseShootFar;
-                driveToTarget(currentTargetPose, 0.5);
-            } else if (bigTimer.seconds() < 8) {
-                launchVelocity = 900 + plusOnePower;
-                highMotor.setVelocity(launchVelocity);
-                lowMotor.setVelocity(launchVelocity);
-            } else if (bigTimer.seconds() < 13) {
-                shootIndividual();
-            } else if (bigTimer.seconds() < 20) {
-                highMotor.setVelocity(0);
-                lowMotor.setVelocity(0);
-            } else if (bigTimer.seconds() < 30) {
-                currentTargetPose = new Pose2D(DistanceUnit.INCH, 63.25, -63.15, AngleUnit.DEGREES, -90);
-                driveToTarget(currentTargetPose, 0.5);
-            }
+            //gamepad1
+            drive();
+            intake();
+            lift();
+            odometry();
+
+            //gamepad2
+            sorting();
+            shooter();
+            shootAutomatic();
+
+            //automatic
+            camera();
+            limitSwitches();
+            countBallsLaunched();
+            sendingAllTelemetry();
         }
     }
 
@@ -223,9 +221,6 @@ public class autonomeTest extends LinearOpMode {
         odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);  // <-------À changer
         odo.resetPosAndIMU();
         nav.setDriveType(DriveToPoint.DriveType.MECANUM);
-
-        odo.setPosition(new Pose2D(DistanceUnit.INCH, xStartingPosition, yStartingPosition, AngleUnit.DEGREES,headingStartingPosition));
-
         initAprilTag();
     }
     void drive() {
