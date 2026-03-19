@@ -121,7 +121,7 @@ public class NewGrosBotRouge extends LinearOpMode {
     DriveToPoint nav;
     Pose2D currentTargetPose = new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0);
     Pose2D targetPoseShootFar = new Pose2D(DistanceUnit.INCH, 59, 13, AngleUnit.DEGREES, 160);
-    Pose2D targetPoseShootClose = new Pose2D(DistanceUnit.INCH, -20, 0, AngleUnit.DEGREES, 125);
+    Pose2D targetPoseShootClose = new Pose2D(DistanceUnit.INCH, -20, 0, AngleUnit.DEGREES, 130);
     Pose2D targetPoseEndgame = new Pose2D(DistanceUnit.INCH, 39, -33, AngleUnit.DEGREES, -90);
 
     @Override
