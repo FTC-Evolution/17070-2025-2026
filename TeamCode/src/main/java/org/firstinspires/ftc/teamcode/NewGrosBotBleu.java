@@ -111,8 +111,8 @@ public class NewGrosBotBleu extends LinearOpMode {
     double yStartingPosition = -63.15;
     double headingStartingPosition = -90.00;
 
-    double odoOffsetX = 194.68;
-    double odoOffsetY = -20.85;
+    double odoOffsetX = 128;
+    double odoOffsetY = -190;
 
     double absoluteHeadingToBlueGoal = 0;
     double relativeHeadingToBlueGoal = 0;
@@ -454,8 +454,8 @@ public class NewGrosBotBleu extends LinearOpMode {
             launchVelocity = 0;
         }
 
-        telemetry.addData("launchVelocity:",launchVelocity);
-        telemetry.addData("added Velocity:",plusOnePower);
+        //telemetry.addData("launchVelocity:",launchVelocity);
+        //telemetry.addData("added Velocity:",plusOnePower);
 
         highMotor.setVelocity(launchVelocity);
         lowMotor.setVelocity(launchVelocity);

@@ -111,8 +111,8 @@ public class autonomeRougeTest extends LinearOpMode {
     double yStartingPosition = 24;
     double headingStartingPosition = 180.00;
 
-    double odoOffsetX = 194.68;
-    double odoOffsetY = -20.85;
+    double odoOffsetX = 128;
+    double odoOffsetY = -190;
 
     double absoluteHeadingToBlueGoal = 0;
     double relativeHeadingToBlueGoal = 0;

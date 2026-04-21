@@ -111,8 +111,8 @@ public class testAngleToGoal extends LinearOpMode {
     double yStartingPosition = -63.15;
     double headingStartingPosition = -90.00;
 
-    double odoOffsetX = 194.68;
-    double odoOffsetY = -20.85;
+    double odoOffsetX = 128;
+    double odoOffsetY = -190;
 
     double absoluteHeadingToBlueGoal = 0;
     double relativeHeadingToBlueGoal = 0;
@@ -369,7 +369,7 @@ public class testAngleToGoal extends LinearOpMode {
 
     void calculateAngleToGoal() {
         odo.update();
-        absoluteHeadingToBlueGoal = (Math.atan2((-72 - odo.getPosY()) / (-72 - odo.getPosX()))) - Math.pi;
+        absoluteHeadingToBlueGoal = (Math.atan((-72 - odo.getPosY()) / (-72 - odo.getPosX()))) - Math.PI;
         if (gamepad1.y) {
             odo.setPosition(new Pose2D(DistanceUnit.INCH, odo.getPosX(), odo.getPosY(), AngleUnit.RADIANS, absoluteHeadingToBlueGoal));
         }
