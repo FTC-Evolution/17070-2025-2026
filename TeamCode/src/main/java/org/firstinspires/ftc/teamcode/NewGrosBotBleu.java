@@ -114,14 +114,25 @@ public class NewGrosBotBleu extends LinearOpMode {
     double odoOffsetX = 128;
     double odoOffsetY = -190;
 
+    String[][] grid = {
+            {" "," "," "," "," "," "},
+            {" "," "," "," "," "," "},
+            {" "," "," "," "," "," "},
+            {" "," "," "," "," "," "},
+            {" "," "," "," "," "," "},
+            {" "," "," "," "," "," "}
+    };
+    int gridX = 0;
+    int gridY = 0;
+
     double absoluteHeadingToBlueGoal = 0;
     double relativeHeadingToBlueGoal = 0;
 
     GoBildaPinpointDriver odo;
     DriveToPoint nav;
     Pose2D currentTargetPose = new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0);
-    Pose2D targetPoseShootFar = new Pose2D(DistanceUnit.INCH, 59, -13, AngleUnit.DEGREES, -160);
-    Pose2D targetPoseShootClose = new Pose2D(DistanceUnit.INCH, -20, 0, AngleUnit.DEGREES, -130);
+    Pose2D targetPoseShootFar = new Pose2D(DistanceUnit.INCH, 59, -13, AngleUnit.DEGREES, -157);
+    Pose2D targetPoseShootClose = new Pose2D(DistanceUnit.INCH, -20, 0, AngleUnit.DEGREES, -126);
     Pose2D targetPoseEndgame = new Pose2D(DistanceUnit.INCH, 39, 33, AngleUnit.DEGREES, 90);
 
     @Override
@@ -146,8 +157,9 @@ public class NewGrosBotBleu extends LinearOpMode {
 
             //automatic
             camera();
-            limitSwitches();
+            //limitSwitches();
             countBallsLaunched();
+            calculatePositionVisual();
             sendingAllTelemetry();
         }
     }
@@ -388,7 +400,7 @@ public class NewGrosBotBleu extends LinearOpMode {
         backRightDrive.setPower(nav.getMotorPower(DriveToPoint.DriveMotor.RIGHT_BACK));
 
         String data2 = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", targetPose.getX(DistanceUnit.INCH), targetPose.getY(DistanceUnit.INCH), targetPose.getHeading(AngleUnit.DEGREES));
-        this.telemetry.addData("TARGET Position", data2);
+        //this.telemetry.addData("TARGET Position", data2);
     }
 
     void sorting() {
@@ -454,11 +466,9 @@ public class NewGrosBotBleu extends LinearOpMode {
             launchVelocity = 0;
         }
 
-        //telemetry.addData("launchVelocity:",launchVelocity);
-        //telemetry.addData("added Velocity:",plusOnePower);
-
         highMotor.setVelocity(launchVelocity);
         lowMotor.setVelocity(launchVelocity);
+        //highMotor.setVelocityPIDFCoefficients(0,0,0,0);
         servosShooting();
     }
 
@@ -563,7 +573,7 @@ public class NewGrosBotBleu extends LinearOpMode {
 
     }   // end method initAprilTag()
 
-    void limitSwitches() {
+    /* void limitSwitches() {
         if (limitSwitchLeft.getState()) {
             if (limitSwitchLeftWasPressed) {
                 ballsPassed += 1;
@@ -587,7 +597,7 @@ public class NewGrosBotBleu extends LinearOpMode {
         } else {
             limitSwitchRightWasPressed = true;
         }
-    }
+    } */
 
     private void countBallsLaunched() {
         if (!correctLaunchSpeed) {
@@ -605,10 +615,24 @@ public class NewGrosBotBleu extends LinearOpMode {
         }
     }
 
+    private void calculatePositionVisual() {
+        grid[gridY][gridX] = " ";
+        gridY = ((int) Math.floor((odo.getPosition().getX(DistanceUnit.INCH) + 72) / 24));
+        gridX = ((int) Math.floor((odo.getPosition().getY(DistanceUnit.INCH) + 72) / 24));
+        grid[gridY][gridX] = "X";
+    }
+
     private void sendingAllTelemetry() {
         if (telemetryTimer.milliseconds() >= 50) {
-            telemetry.addData("Servo 1 Position", "%5.2f", servo1.getPower());
-            telemetry.addData("Servo 2 Position", "%5.2f", servo2.getPower());
+            //Visual for Position on Field
+            for (int i = 0; i <= 5; i++) {
+                telemetry.addLine("------------------------------------");
+                telemetry.addLine("|   " + grid[i][0] + "   |   " + grid[i][1] + "   |   " + grid[i][2] + "   |   " + grid[i][3] + "   |   " + grid[i][4] + "   |   " + grid[i][5] + "   |");
+            }
+            telemetry.addLine("----------------------------------------------");
+
+            //telemetry.addData("Servo 1 Position", "%5.2f", servo1.getPower());
+            //telemetry.addData("Servo 2 Position", "%5.2f", servo2.getPower());
 
             telemetry.addData("High Motor Speed", highMotor.getVelocity());
             telemetry.addData("Lower Motor Speed", lowMotor.getVelocity());
@@ -616,7 +640,7 @@ public class NewGrosBotBleu extends LinearOpMode {
             telemetry.addData("Correct Launch Speed", correctLaunchSpeed);
             telemetry.addData("Balls Launched", ballsReallyLaunched);
 
-            if (limitSwitchLeft.getState()) {
+            /* if (limitSwitchLeft.getState()) {
                 telemetry.addData("Switch Left", "Open / Not Pressed");
             } else {
                 telemetry.addData("Switch Left", "PRESSED / TRIGGERED");
@@ -627,7 +651,8 @@ public class NewGrosBotBleu extends LinearOpMode {
             } else {
                 telemetry.addData("Switch Right", "PRESSED / TRIGGERED");
             }
-            telemetry.addData("Balls Passed", ballsPassed);
+            telemetry.addData("Balls Passed", ballsPassed); */
+
 
             odo.update();
             telemetry.addData("X Position", "%5.2f", odo.getPosition().getX(DistanceUnit.INCH));
