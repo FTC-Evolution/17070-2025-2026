@@ -114,6 +114,7 @@ public class NewGrosBotBleu extends LinearOpMode {
     double odoOffsetX = 128;
     double odoOffsetY = -190;
 
+    //Visual on the Driver Hub for localisation
     String[][] grid = {
             {" "," "," "," "," "," "},
             {" "," "," "," "," "," "},
@@ -125,6 +126,11 @@ public class NewGrosBotBleu extends LinearOpMode {
     int gridX = 0;
     int gridY = 0;
 
+    //Economy of battery Usage (the shooter is the priority: when it is shooting, the other systems draw less current)
+    boolean batterySavingMode = true;
+    boolean shooterActive = false;
+
+    //To make work one day
     double absoluteHeadingToBlueGoal = 0;
     double relativeHeadingToBlueGoal = 0;
 
@@ -249,7 +255,11 @@ public class NewGrosBotBleu extends LinearOpMode {
             double backLeftPower = -gamepad1.left_stick_y - gamepad1.left_stick_x + -gamepad1.right_stick_x;
 
             double maxPower = 1.0;
-            double maxSpeed = 1.0;  // make this slower for outreaches
+            if (batterySavingMode == true && shooterActive == true) {
+                double maxSpeed = 0.75;    
+            } else {
+                double maxSpeed = 1.0;  // make this slower for outreaches
+            }
 
             // This is needed to make sure we don't pass > 1.0 to any wheel
             // It allows us to keep all of the motors in proportion to what they should
@@ -289,7 +299,11 @@ public class NewGrosBotBleu extends LinearOpMode {
             double backLeftPower = newForward - newRight + gamepad1.right_stick_x;
 
             double maxPower = 1.0;
-            double maxSpeed = 1.0;  // make this slower for outreaches
+            if (batterySavingMode == true && shooterActive == true) {
+                double maxSpeed = 0.75;    
+            } else {
+                double maxSpeed = 1.0;  // make this slower for outreaches
+            }
 
             // This is needed to make sure we don't pass > 1.0 to any wheel
             // It allows us to keep all of the motors in proportion to what they should
@@ -338,20 +352,30 @@ public class NewGrosBotBleu extends LinearOpMode {
             intakePower = -3;
         }
 
-        if (intakePower == 0) {
-            intakeMotor.setPower(0);
-        } else if (intakePower == 1) {
-            intakeMotor.setPower(0.7);
-        } else if (intakePower == 2) {
-            intakeMotor.setPower(0.85);
-        } else if (intakePower == 3) {
-            intakeMotor.setPower(1);
-        } else if (intakePower == -1) {
-            intakeMotor.setPower(-0.7);
-        } else if (intakePower == -2) {
-            intakeMotor.setPower(-0.85);
-        } else if (intakePower == -3) {
-            intakeMotor.setPower(-1);
+        if (batterySavingMode == true && shooterActive == true) {
+            if (intakePower == 0) {
+                intakeMotor.setPower(0);
+            } else if (intakePower > 0) {
+                intakeMotor.setPower(0.6);
+            } else if (intakePower < 0) {
+                intakeMotor.setPower(-0.6);
+            }    
+        } else {
+            if (intakePower == 0) {
+                intakeMotor.setPower(0);
+            } else if (intakePower == 1) {
+                intakeMotor.setPower(0.7);
+            } else if (intakePower == 2) {
+                intakeMotor.setPower(0.85);
+            } else if (intakePower == 3) {
+                intakeMotor.setPower(1);
+            } else if (intakePower == -1) {
+                intakeMotor.setPower(-0.7);
+            } else if (intakePower == -2) {
+                intakeMotor.setPower(-0.85);
+            } else if (intakePower == -3) {
+                intakeMotor.setPower(-1);
+            }    
         }
     }
 
@@ -366,15 +390,22 @@ public class NewGrosBotBleu extends LinearOpMode {
     void odometry() {
         if (gamepad1.dpad_left) {
             currentTargetPose = targetPoseShootFar;
-            driveToTarget(currentTargetPose, 0.5);
+            driveToTarget(currentTargetPose, 0.8);
+            highMotor.setVelocity(850);
+            lowMotor.setVelocity(850);
+            shooterActive = true;
+
         }
         if (gamepad1.dpad_right) {
             currentTargetPose = targetPoseShootClose;
-            driveToTarget(currentTargetPose, 0.5);
+            driveToTarget(currentTargetPose, 0.8);
+            highMotor.setVelocity(780);
+            lowMotor.setVelocity(780);
+            shooterActive = true;
         }
         if (gamepad1.dpad_down) {
             currentTargetPose = targetPoseEndgame;
-            driveToTarget(currentTargetPose, 0.5);
+            driveToTarget(currentTargetPose, 0.8);
         }
 
         if (gamepad1.ps) {
@@ -459,11 +490,14 @@ public class NewGrosBotBleu extends LinearOpMode {
 
         if (gamepad2.left_bumper) {
             launchVelocity = 850 + plusOnePower;
+            shooterActive = true;
         } else if (gamepad2.right_bumper) {
             launchVelocity = 780 + plusOnePower;
+            shooterActive = true;
         } else if (gamepad2.b) {
             plusOnePower = 0;
             launchVelocity = 0;
+            shooterActive = false;
         }
 
         highMotor.setVelocity(launchVelocity);
@@ -631,8 +665,8 @@ public class NewGrosBotBleu extends LinearOpMode {
             }
             telemetry.addLine("----------------------------------------------");
 
-            //telemetry.addData("Servo 1 Position", "%5.2f", servo1.getPower());
-            //telemetry.addData("Servo 2 Position", "%5.2f", servo2.getPower());
+            telemetry.addData("Battery Saving Mode Enabled?", batterySavingMode);
+            telemetry.addData("Shooter is active?", shooterActive);
 
             telemetry.addData("High Motor Speed", highMotor.getVelocity());
             telemetry.addData("Lower Motor Speed", lowMotor.getVelocity());
