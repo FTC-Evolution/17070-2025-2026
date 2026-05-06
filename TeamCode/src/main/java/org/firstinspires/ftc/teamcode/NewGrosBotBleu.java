@@ -255,10 +255,9 @@ public class NewGrosBotBleu extends LinearOpMode {
             double backLeftPower = -gamepad1.left_stick_y - gamepad1.left_stick_x + -gamepad1.right_stick_x;
 
             double maxPower = 1.0;
+            double maxSpeed = 1.0; // make this slower for outreaches
             if (batterySavingMode == true && shooterActive == true) {
-                double maxSpeed = 0.75;    
-            } else {
-                double maxSpeed = 1.0;  // make this slower for outreaches
+                maxSpeed = 0.75;
             }
 
             // This is needed to make sure we don't pass > 1.0 to any wheel
@@ -299,10 +298,9 @@ public class NewGrosBotBleu extends LinearOpMode {
             double backLeftPower = newForward - newRight + gamepad1.right_stick_x;
 
             double maxPower = 1.0;
+            double maxSpeed = 1.0;  // make this slower for outreaches
             if (batterySavingMode == true && shooterActive == true) {
-                double maxSpeed = 0.75;    
-            } else {
-                double maxSpeed = 1.0;  // make this slower for outreaches
+                maxSpeed = 0.75;
             }
 
             // This is needed to make sure we don't pass > 1.0 to any wheel
@@ -391,16 +389,14 @@ public class NewGrosBotBleu extends LinearOpMode {
         if (gamepad1.dpad_left) {
             currentTargetPose = targetPoseShootFar;
             driveToTarget(currentTargetPose, 0.8);
-            highMotor.setVelocity(850);
-            lowMotor.setVelocity(850);
+            launchVelocity = 850 + plusOnePower;
             shooterActive = true;
 
         }
         if (gamepad1.dpad_right) {
             currentTargetPose = targetPoseShootClose;
             driveToTarget(currentTargetPose, 0.8);
-            highMotor.setVelocity(780);
-            lowMotor.setVelocity(780);
+            launchVelocity = 780 + plusOnePower;
             shooterActive = true;
         }
         if (gamepad1.dpad_down) {
@@ -435,14 +431,26 @@ public class NewGrosBotBleu extends LinearOpMode {
     }
 
     void sorting() {
-        if (gamepad2.left_trigger > 0.75) {
-            doorLeft.setPosition(0.97);
-            doorRight.setPosition(0.25);
-            doorSide = 2;
-        } else if (gamepad2.right_trigger > 0.75) {
-            doorLeft.setPosition(0.67);
-            doorRight.setPosition(0);
-            doorSide = 1;
+        if (odo.getPosition().getHeading(AngleUnit.DEGREES) <= 0) {
+            if (gamepad2.left_trigger > 0.75) {
+                doorLeft.setPosition(0.97);
+                doorRight.setPosition(0.25);
+                doorSide = 2;
+            } else if (gamepad2.right_trigger > 0.75) {
+                doorLeft.setPosition(0.67);
+                doorRight.setPosition(0);
+                doorSide = 1;
+            }
+        } else if (odo.getPosition().getHeading(AngleUnit.DEGREES) > 0) {
+            if (gamepad2.right_trigger > 0.75) {
+                doorLeft.setPosition(0.97);
+                doorRight.setPosition(0.25);
+                doorSide = 2;
+            } else if (gamepad2.left_trigger > 0.75) {
+                doorLeft.setPosition(0.67);
+                doorRight.setPosition(0);
+                doorSide = 1;
+            }
         }
     }
 
@@ -507,19 +515,36 @@ public class NewGrosBotBleu extends LinearOpMode {
     }
 
     void servosShooting() {
-        if (gamepad2.right_stick_y > 0.75) {
-            servo1.setPower(1);
-        } else if (gamepad2.right_stick_y < -0.75) {
-            servo1.setPower(-1);
-        } else {
-            servo1.setPower(0);
-        }
-        if (gamepad2.left_stick_y < -0.75) {
-            servo2.setPower(1);
-        } else if (gamepad2.left_stick_y > 0.75) {
-            servo2.setPower(-1);
-        } else {
-            servo2.setPower(0);
+        if (odo.getPosition().getHeading(AngleUnit.DEGREES) <= 0) {
+            if (gamepad2.right_stick_y > 0.75) {
+                servo1.setPower(1);
+            } else if (gamepad2.right_stick_y < -0.75) {
+                servo1.setPower(-1);
+            } else {
+                servo1.setPower(0);
+            }
+            if (gamepad2.left_stick_y < -0.75) {
+                servo2.setPower(1);
+            } else if (gamepad2.left_stick_y > 0.75) {
+                servo2.setPower(-1);
+            } else {
+                servo2.setPower(0);
+            }
+        } else if (odo.getPosition().getHeading(AngleUnit.DEGREES) > 0) {
+            if (gamepad2.right_stick_y > 0.75) {
+                servo2.setPower(-1);
+            } else if (gamepad2.right_stick_y < -0.75) {
+                servo2.setPower(1);
+            } else {
+                servo2.setPower(0);
+            }
+            if (gamepad2.left_stick_y < -0.75) {
+                servo1.setPower(-1);
+            } else if (gamepad2.left_stick_y > 0.75) {
+                servo1.setPower(1);
+            } else {
+                servo1.setPower(0);
+            }
         }
     }
 
@@ -653,6 +678,10 @@ public class NewGrosBotBleu extends LinearOpMode {
         grid[gridY][gridX] = " ";
         gridY = ((int) Math.floor((odo.getPosition().getX(DistanceUnit.INCH) + 72) / 24));
         gridX = ((int) Math.floor((odo.getPosition().getY(DistanceUnit.INCH) + 72) / 24));
+        if(gridX > 5) {gridX = 5;}
+        if(gridX < 0) {gridX = 0;}
+        if(gridY > 5) {gridY = 5;}
+        if(gridY < 0) {gridY = 0;}
         grid[gridY][gridX] = "X";
     }
 
@@ -660,10 +689,10 @@ public class NewGrosBotBleu extends LinearOpMode {
         if (telemetryTimer.milliseconds() >= 50) {
             //Visual for Position on Field
             for (int i = 0; i <= 5; i++) {
-                telemetry.addLine("------------------------------------");
+                telemetry.addLine("-----------------------------------------");
                 telemetry.addLine("|   " + grid[i][0] + "   |   " + grid[i][1] + "   |   " + grid[i][2] + "   |   " + grid[i][3] + "   |   " + grid[i][4] + "   |   " + grid[i][5] + "   |");
             }
-            telemetry.addLine("----------------------------------------------");
+            telemetry.addLine("-----------------------------------------");
 
             telemetry.addData("Battery Saving Mode Enabled?", batterySavingMode);
             telemetry.addData("Shooter is active?", shooterActive);
