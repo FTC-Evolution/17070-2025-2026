@@ -392,6 +392,7 @@ public class NewGrosBotBleu extends LinearOpMode {
             launchVelocity = 850 + plusOnePower;
             shooterActive = true;
 
+
         }
         if (gamepad1.dpad_right) {
             currentTargetPose = targetPoseShootClose;
