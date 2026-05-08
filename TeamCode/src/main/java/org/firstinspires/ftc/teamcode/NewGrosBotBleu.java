@@ -141,6 +141,10 @@ public class NewGrosBotBleu extends LinearOpMode {
     Pose2D targetPoseShootClose = new Pose2D(DistanceUnit.INCH, -20, 0, AngleUnit.DEGREES, -126);
     Pose2D targetPoseEndgame = new Pose2D(DistanceUnit.INCH, 39, 33, AngleUnit.DEGREES, 90);
 
+
+    //Align with camera
+    float cameraAngleToGoal;
+
     @Override
     public void runOpMode() throws InterruptedException {
         initialization();
@@ -156,6 +160,7 @@ public class NewGrosBotBleu extends LinearOpMode {
             intake();
             lift();
             odometry();
+            alignWithCamera();
 
             //gamepad2
             sorting();
@@ -392,7 +397,6 @@ public class NewGrosBotBleu extends LinearOpMode {
             launchVelocity = 850 + plusOnePower;
             shooterActive = true;
 
-
         }
         if (gamepad1.dpad_right) {
             currentTargetPose = targetPoseShootClose;
@@ -407,6 +411,13 @@ public class NewGrosBotBleu extends LinearOpMode {
 
         if (gamepad1.ps) {
             odo.setPosition(new Pose2D(DistanceUnit.INCH, xStartingPosition, -yStartingPosition, AngleUnit.DEGREES, -headingStartingPosition));
+        }
+    }
+
+    void alignWithCamera() {
+        if (gamepad1.triangle) {
+            currentTargetPose = new Pose2D(DistanceUnit.INCH, odo.getPosition().getX(DistanceUnit.INCH), odo.getPosition().getY(DistanceUnit.INCH), AngleUnit.DEGREES, odo.getPosition().getHeading(AngleUnit.DEGREES) + cameraAngleToGoal - 3   );
+            driveToTarget(currentTargetPose, 0.5);
         }
     }
 
@@ -503,7 +514,7 @@ public class NewGrosBotBleu extends LinearOpMode {
         } else if (gamepad2.right_bumper) {
             launchVelocity = 780 + plusOnePower;
             shooterActive = true;
-        } else if (gamepad2.b) {
+        } else if (gamepad2.b || gamepad1.b) {
             plusOnePower = 0;
             launchVelocity = 0;
             shooterActive = false;
@@ -733,6 +744,8 @@ public class NewGrosBotBleu extends LinearOpMode {
                     telemetry.addLine(String.format("XYZ %6.1f %6.1f %6.1f  (inch)", detection.ftcPose.x, detection.ftcPose.y, detection.ftcPose.z));
                     telemetry.addLine(String.format("PRY %6.1f %6.1f %6.1f  (deg)", detection.ftcPose.pitch, detection.ftcPose.roll, detection.ftcPose.yaw));
                     telemetry.addLine(String.format("RBE %6.1f %6.1f %6.1f  (inch, deg, deg)", detection.ftcPose.range, detection.ftcPose.bearing, detection.ftcPose.elevation));
+                    cameraAngleToGoal = (float) detection.ftcPose.bearing;
+                    telemetry.addData("Angle to turn", cameraAngleToGoal);
                 } else {
                     telemetry.addLine(String.format("\n==== (ID %d) Unknown", detection.id));
                     telemetry.addLine(String.format("Center %6.0f %6.0f   (pixels)", detection.center.x, detection.center.y));
