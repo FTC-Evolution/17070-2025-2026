@@ -135,7 +135,7 @@ public class BlueNewGrosBot extends LinearOpMode {
     double oldLedColor;
     double newLedColor;
 
-    //To make work one day
+    //To test (probably won't work the first time, but worth a shot)
     double absoluteHeadingToBlueGoal = 0;
     double relativeHeadingToBlueGoal = 0;
 
@@ -759,6 +759,12 @@ public class BlueNewGrosBot extends LinearOpMode {
 
     private void sendingAllTelemetry() {
         if (telemetryTimer.milliseconds() >= 50) {
+            //Test trigonometry
+            telemetry.addData("Position X to goal", (-72 - odo.getPosition().getX(DistanceUnit.INCH)));
+            telemetry.addData("Position Y to goal", (-72 - odo.getPosition().getY(DistanceUnit.INCH)));
+            absoluteHeadingToBlueGoal = Math.tan((-72 - odo.getPosition().getY(DistanceUnit.INCH)) / (-72 - odo.getPosition().getX(DistanceUnit.INCH)));
+            telemetry.addData("Angle to goal", absoluteHeadingToBlueGoal); 
+
             //Visual for Position on Field
             for (int i = 0; i <= 5; i++) {
                 telemetry.addLine("-----------------------------------------");
