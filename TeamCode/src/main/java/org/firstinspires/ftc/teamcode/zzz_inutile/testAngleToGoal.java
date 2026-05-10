@@ -27,7 +27,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import java.util.List;
 import java.util.Locale;
 
-
+@Disabled
 @TeleOp
 public class testAngleToGoal extends LinearOpMode {
     //Defining Motors

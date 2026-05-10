@@ -29,7 +29,7 @@ import java.util.Locale;
 
 
 @TeleOp
-public class NewGrosBotBleu extends LinearOpMode {
+public class BlueNewGrosBot extends LinearOpMode {
     //Defining Motors
     DcMotor frontLeftDrive;
     DcMotor frontRightDrive;
@@ -94,11 +94,11 @@ public class NewGrosBotBleu extends LinearOpMode {
     ElapsedTime telemetryTimer = new ElapsedTime();
 
     //Limit Switches
-    DigitalChannel limitSwitchLeft;
+    /*DigitalChannel limitSwitchLeft;
     DigitalChannel limitSwitchRight;
     boolean limitSwitchLeftWasPressed = false;
     boolean limitSwitchRightWasPressed = false;
-    int ballsPassed = 0;
+    int ballsPassed = 0; */
 
     //Counting shots
     double launchVelocity = 0;
@@ -129,6 +129,11 @@ public class NewGrosBotBleu extends LinearOpMode {
     //Economy of battery Usage (the shooter is the priority: when it is shooting, the other systems draw less current)
     boolean batterySavingMode = true;
     boolean shooterActive = false;
+
+    //Indicator Lights
+    Servo led;
+    double oldLedColor;
+    double newLedColor;
 
     //To make work one day
     double absoluteHeadingToBlueGoal = 0;
@@ -171,6 +176,8 @@ public class NewGrosBotBleu extends LinearOpMode {
             //limitSwitches();
             countBallsLaunched();
             calculatePositionVisual();
+            indicatorLight();
+            shootWhenReady();
             sendingAllTelemetry();
         }
     }
@@ -190,6 +197,7 @@ public class NewGrosBotBleu extends LinearOpMode {
         servo2 = hardwareMap.get(CRServo.class, "servo2");
         doorLeft = hardwareMap.get(Servo.class, "doorLeft");
         doorRight = hardwareMap.get(Servo.class, "doorRight");
+        led = hardwareMap.get(Servo.class, "led");
 
         limitSwitchLeft = hardwareMap.get(DigitalChannel.class, "limitSwitchLeft");
         limitSwitchLeft.setMode(DigitalChannel.Mode.INPUT);
@@ -213,6 +221,10 @@ public class NewGrosBotBleu extends LinearOpMode {
         highMotor.setDirection(DcMotorEx.Direction.REVERSE);
         intakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
 
+        //À tuner 😱🤞🥵
+        //highMotor.setVelocityPIDFCoefficients(0,0,0,0);
+        //lowMotor.setVelocityPIDFCoefficients(0,0,0,0);
+
         imu = hardwareMap.get(IMU.class, "imu");
         // This needs to be changed to match the orientation on your robot
         RevHubOrientationOnRobot.LogoFacingDirection logoDirection =
@@ -233,10 +245,12 @@ public class NewGrosBotBleu extends LinearOpMode {
         odo = this.hardwareMap.get(GoBildaPinpointDriver.class, "odo");
         odo.setOffsets(odoOffsetX, odoOffsetY);
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);  // <-------À changer
+        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);
         odo.resetPosAndIMU();
         nav.setDriveType(DriveToPoint.DriveType.MECANUM);
         initAprilTag();
+
+        led.setPosition(0.611);
     }
     void drive() {
         //telemetry.addLine("Press A to reset Yaw");
@@ -380,29 +394,40 @@ public class NewGrosBotBleu extends LinearOpMode {
                 intakeMotor.setPower(-1);
             }    
         }
+
+        if (intakePower > 0) {
+            if (doorSide == 1) {
+                servo1.setPower(-1);
+            } else if (doorSide == 2) {
+                servo2.setPower(1);
+            }
+        }
     }
 
-    void lift() {
+    /* void lift() {
         if (gamepad1.right_bumper) {
             elevator.setPower(0.75);
         } else if (gamepad1.left_bumper) {
             elevator.setPower(0);
         }
-    }
+    } */
 
     void odometry() {
+        odo.update();
+
         if (gamepad1.dpad_left) {
             currentTargetPose = targetPoseShootFar;
             driveToTarget(currentTargetPose, 0.8);
             launchVelocity = 850 + plusOnePower;
             shooterActive = true;
-
+            ballsReallyLaunched = 0;
         }
         if (gamepad1.dpad_right) {
             currentTargetPose = targetPoseShootClose;
             driveToTarget(currentTargetPose, 0.8);
             launchVelocity = 780 + plusOnePower;
             shooterActive = true;
+            ballsReallyLaunched = 0;
         }
         if (gamepad1.dpad_down) {
             currentTargetPose = targetPoseEndgame;
@@ -444,21 +469,21 @@ public class NewGrosBotBleu extends LinearOpMode {
 
     void sorting() {
         if (odo.getPosition().getHeading(AngleUnit.DEGREES) <= 0) {
-            if (gamepad2.left_trigger > 0.75) {
+            if (gamepad2.left_trigger > 0.75 || gamepad1.left_bumper > 0.75) {
                 doorLeft.setPosition(0.97);
                 doorRight.setPosition(0.25);
                 doorSide = 2;
-            } else if (gamepad2.right_trigger > 0.75) {
+            } else if (gamepad2.right_trigger > 0.75 || gamepad1.right_bumper > 0.75) {
                 doorLeft.setPosition(0.67);
                 doorRight.setPosition(0);
                 doorSide = 1;
             }
         } else if (odo.getPosition().getHeading(AngleUnit.DEGREES) > 0) {
-            if (gamepad2.right_trigger > 0.75) {
+            if (gamepad2.right_trigger > 0.75 || gamepad1.right_bumper > 0.75) {
                 doorLeft.setPosition(0.97);
                 doorRight.setPosition(0.25);
                 doorSide = 2;
-            } else if (gamepad2.left_trigger > 0.75) {
+            } else if (gamepad2.left_trigger > 0.75 || gamepad1.left_bumper > 0.75) {
                 doorLeft.setPosition(0.67);
                 doorRight.setPosition(0);
                 doorSide = 1;
@@ -522,7 +547,6 @@ public class NewGrosBotBleu extends LinearOpMode {
 
         highMotor.setVelocity(launchVelocity);
         lowMotor.setVelocity(launchVelocity);
-        //highMotor.setVelocityPIDFCoefficients(0,0,0,0);
         servosShooting();
     }
 
@@ -673,7 +697,7 @@ public class NewGrosBotBleu extends LinearOpMode {
     private void countBallsLaunched() {
         if (!correctLaunchSpeed) {
             if (launchVelocity > 0) {
-                if (highMotor.getVelocity() == launchVelocity && lowMotor.getVelocity() == launchVelocity) {
+                if ((highMotor.getVelocity() >= launchVelocity - 10 && highMotor.getVelocity() <= launchVelocity + 10) && (lowMotor.getVelocity() >= launchVelocity - 10 && lowMotor.getVelocity() <= launchVelocity + 10)) {
                     correctLaunchSpeed = true;
                 }
             }
@@ -683,6 +707,10 @@ public class NewGrosBotBleu extends LinearOpMode {
                 ballsReallyLaunched += 1;
                 correctLaunchSpeed = false;
             }
+        }
+
+        if (ballsReallyLaunched >= 3) {
+            ballsReallyLaunched = 0;
         }
     }
 
@@ -696,6 +724,38 @@ public class NewGrosBotBleu extends LinearOpMode {
         if(gridY < 0) {gridY = 0;}
         grid[gridY][gridX] = "X";
     }
+
+    private void indicatorLight() {
+        if (correctLaunchSpeed && isAtTarget(10, 100, 10)) {
+            newLedColor = 0.5;
+        } else if (correctLaunchSpeed) {
+            newLedColor = 0.444;
+        } else if (isAtTarget(10, 100, 10)) {
+            newLedColor = 0.388;
+        } else {
+            newLedColor = 0;
+        }
+
+        if (newLedColor != oldLedColor) {
+            led.setPosition(newLedColor);
+        }
+    }
+
+    private void shootWhenReady() {
+        if (newLedColor == 0.5) {
+            if (doorSide == 1) {
+                servo1.setPower(-1);
+            } else if (doorSide == 2) {
+                servo2.setPower(1);
+            }
+        } else if (oldLedColor == 0.5) {
+            servo1.setPower(0);
+            servo2.setPower(0);
+        }
+
+        oldLedColor = newLedColor;
+    }
+
 
     private void sendingAllTelemetry() {
         if (telemetryTimer.milliseconds() >= 50) {
@@ -729,7 +789,6 @@ public class NewGrosBotBleu extends LinearOpMode {
             telemetry.addData("Balls Passed", ballsPassed); */
 
 
-            odo.update();
             telemetry.addData("X Position", "%5.2f", odo.getPosition().getX(DistanceUnit.INCH));
             telemetry.addData("Y Position", "%5.2f", odo.getPosition().getY(DistanceUnit.INCH));
             telemetry.addData("Heading", "%5.2f", odo.getPosition().getHeading(AngleUnit.DEGREES));
