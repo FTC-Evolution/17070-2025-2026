@@ -6,9 +6,8 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
-import com.qualcomm.robotcore.hardware.DigitalChannel;
+//import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.IMU;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -17,6 +16,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import android.util.Size;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.odometry.DriveToPoint;
@@ -25,7 +25,7 @@ import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import java.util.List;
-import java.util.Locale;
+//import java.util.Locale;
 
 
 @TeleOp
@@ -37,18 +37,11 @@ public class BlueNewGrosBot extends LinearOpMode {
     DcMotor backRightDrive;
     DcMotorEx highMotor;
     DcMotorEx lowMotor;
-    DcMotor intakeMotor;
-    DcMotor elevator;
+    DcMotorEx intakeMotor;
+    //DcMotor elevator;
 
     //Variables for shooter
     double plusOnePower  = 0.0;
-
-    //Automatic shoot
-    ElapsedTime automaticShootingTimer = new ElapsedTime();
-    boolean yWasPressed = false;
-    int ballsShot = 0;
-    static final double CYCLETIME_MS = 750;
-
 
     //Defining Servos
     CRServo servo1;
@@ -64,8 +57,6 @@ public class BlueNewGrosBot extends LinearOpMode {
     boolean dpadDownWasPressed = false;
     boolean dpadRightWasPressed = false;
     boolean dpadLeftWasPressed = false;
-    boolean dpadUpWasPressed2 = false;
-    boolean dpadDownWasPressed2 = false;
     boolean triggerRightWasPressed = false;
     boolean triggerLeftWasPressed = false;
 
@@ -105,6 +96,12 @@ public class BlueNewGrosBot extends LinearOpMode {
     boolean correctLaunchSpeed = false;
     int ballsReallyLaunched = 0;
 
+    //Counting balls intaked
+    int ballsReallyIntaked = 0;
+    boolean correctIntakeAmps = false;
+    double normalAmpsIntake = 1;  //<---------------------- To change
+    double ballIntakedAmps = 0.5; //<---------------------- To change
+
     //Odometry
     //Depart dans la loading zone rouge, face au human player
     double  xStartingPosition = 63.25;
@@ -137,7 +134,7 @@ public class BlueNewGrosBot extends LinearOpMode {
 
     //To test (probably won't work the first time, but worth a shot)
     double absoluteHeadingToBlueGoal = 0;
-    double relativeHeadingToBlueGoal = 0;
+
 
     GoBildaPinpointDriver odo;
     DriveToPoint nav;
@@ -163,7 +160,7 @@ public class BlueNewGrosBot extends LinearOpMode {
             //gamepad1
             drive();
             intake();
-            lift();
+            //lift();
             odometry();
             alignWithCamera();
 
@@ -175,6 +172,7 @@ public class BlueNewGrosBot extends LinearOpMode {
             camera();
             //limitSwitches();
             countBallsLaunched();
+            countBallsIntaked();
             calculatePositionVisual();
             indicatorLight();
             shootWhenReady();
@@ -190,8 +188,8 @@ public class BlueNewGrosBot extends LinearOpMode {
 
         highMotor = (DcMotorEx) hardwareMap.dcMotor.get("highMotor");
         lowMotor = (DcMotorEx) hardwareMap.dcMotor.get("lowMotor");
-        intakeMotor = hardwareMap.dcMotor.get("intakeMotor");
-        elevator = hardwareMap.dcMotor.get("elevatorMotor");
+        intakeMotor = (DcMotorEx) hardwareMap.dcMotor.get("intakeMotor");
+        //elevator = hardwareMap.dcMotor.get("elevatorMotor");
 
         servo1 = hardwareMap.get(CRServo.class, "servo1");
         servo2 = hardwareMap.get(CRServo.class, "servo2");
@@ -199,10 +197,10 @@ public class BlueNewGrosBot extends LinearOpMode {
         doorRight = hardwareMap.get(Servo.class, "doorRight");
         led = hardwareMap.get(Servo.class, "led");
 
-        limitSwitchLeft = hardwareMap.get(DigitalChannel.class, "limitSwitchLeft");
+        /*limitSwitchLeft = hardwareMap.get(DigitalChannel.class, "limitSwitchLeft");
         limitSwitchLeft.setMode(DigitalChannel.Mode.INPUT);
         limitSwitchRight = hardwareMap.get(DigitalChannel.class, "limitSwitchRight");
-        limitSwitchRight.setMode(DigitalChannel.Mode.INPUT);
+        limitSwitchRight.setMode(DigitalChannel.Mode.INPUT); */
 
         backRightDrive.setDirection(DcMotor.Direction.REVERSE);
         frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
@@ -212,14 +210,14 @@ public class BlueNewGrosBot extends LinearOpMode {
         backLeftDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         backRightDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        highMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        lowMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        intakeMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        elevator.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        highMotor.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        lowMotor.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        intakeMotor.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
+        //elevator.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         lowMotor.setDirection(DcMotorEx.Direction.REVERSE);
         highMotor.setDirection(DcMotorEx.Direction.REVERSE);
-        intakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        intakeMotor.setDirection(DcMotorEx.Direction.REVERSE);
 
         //À tuner 😱🤞🥵
         //highMotor.setVelocityPIDFCoefficients(0,0,0,0);
@@ -268,14 +266,14 @@ public class BlueNewGrosBot extends LinearOpMode {
         if (gamepad1.left_bumper) {
             // This calculates the power needed for each wheel based on the amount of forward,
             // strafe right, and rotate
-            double frontLeftPower = -gamepad1.left_stick_y + gamepad1.left_stick_x + -gamepad1.right_stick_x;
-            double frontRightPower = -gamepad1.left_stick_y - gamepad1.left_stick_x - -gamepad1.right_stick_x;
-            double backRightPower = -gamepad1.left_stick_y + gamepad1.left_stick_x - -gamepad1.right_stick_x;
-            double backLeftPower = -gamepad1.left_stick_y - gamepad1.left_stick_x + -gamepad1.right_stick_x;
+            double frontLeftPower = -gamepad1.left_stick_y + gamepad1.left_stick_x - gamepad1.right_stick_x;
+            double frontRightPower = -gamepad1.left_stick_y - gamepad1.left_stick_x + gamepad1.right_stick_x;
+            double backRightPower = -gamepad1.left_stick_y + gamepad1.left_stick_x + gamepad1.right_stick_x;
+            double backLeftPower = -gamepad1.left_stick_y - gamepad1.left_stick_x - gamepad1.right_stick_x;
 
             double maxPower = 1.0;
             double maxSpeed = 1.0; // make this slower for outreaches
-            if (batterySavingMode == true && shooterActive == true) {
+            if (batterySavingMode && shooterActive) {
                 maxSpeed = 0.75;
             }
 
@@ -318,7 +316,7 @@ public class BlueNewGrosBot extends LinearOpMode {
 
             double maxPower = 1.0;
             double maxSpeed = 1.0;  // make this slower for outreaches
-            if (batterySavingMode == true && shooterActive == true) {
+            if (batterySavingMode && shooterActive) {
                 maxSpeed = 0.75;
             }
 
@@ -369,7 +367,7 @@ public class BlueNewGrosBot extends LinearOpMode {
             intakePower = -3;
         }
 
-        if (batterySavingMode == true && shooterActive == true) {
+        if (batterySavingMode && shooterActive) {
             if (intakePower == 0) {
                 intakeMotor.setPower(0);
             } else if (intakePower > 0) {
@@ -463,27 +461,27 @@ public class BlueNewGrosBot extends LinearOpMode {
         backLeftDrive.setPower(nav.getMotorPower(DriveToPoint.DriveMotor.LEFT_BACK));
         backRightDrive.setPower(nav.getMotorPower(DriveToPoint.DriveMotor.RIGHT_BACK));
 
-        String data2 = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", targetPose.getX(DistanceUnit.INCH), targetPose.getY(DistanceUnit.INCH), targetPose.getHeading(AngleUnit.DEGREES));
+        //String data2 = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", targetPose.getX(DistanceUnit.INCH), targetPose.getY(DistanceUnit.INCH), targetPose.getHeading(AngleUnit.DEGREES));
         //this.telemetry.addData("TARGET Position", data2);
     }
 
     void sorting() {
         if (odo.getPosition().getHeading(AngleUnit.DEGREES) <= 0) {
-            if (gamepad2.left_trigger > 0.75 || gamepad1.left_bumper > 0.75) {
+            if (gamepad2.left_trigger > 0.75 || gamepad1.left_bumper) {
                 doorLeft.setPosition(0.97);
                 doorRight.setPosition(0.25);
                 doorSide = 2;
-            } else if (gamepad2.right_trigger > 0.75 || gamepad1.right_bumper > 0.75) {
+            } else if (gamepad2.right_trigger > 0.75 || gamepad1.right_bumper) {
                 doorLeft.setPosition(0.67);
                 doorRight.setPosition(0);
                 doorSide = 1;
             }
         } else if (odo.getPosition().getHeading(AngleUnit.DEGREES) > 0) {
-            if (gamepad2.right_trigger > 0.75 || gamepad1.right_bumper > 0.75) {
+            if (gamepad2.right_trigger > 0.75 || gamepad1.right_bumper) {
                 doorLeft.setPosition(0.97);
                 doorRight.setPosition(0.25);
                 doorSide = 2;
-            } else if (gamepad2.left_trigger > 0.75 || gamepad1.left_bumper > 0.75) {
+            } else if (gamepad2.left_trigger > 0.75 || gamepad1.left_bumper) {
                 doorLeft.setPosition(0.67);
                 doorRight.setPosition(0);
                 doorSide = 1;
@@ -714,6 +712,22 @@ public class BlueNewGrosBot extends LinearOpMode {
         }
     }
 
+    private void countBallsIntaked() {
+        if (!correctIntakeAmps) {
+            if (intakeMotor.getCurrent(CurrentUnit.AMPS) > 0) {
+                if (intakeMotor.getCurrent(CurrentUnit.AMPS) >= normalAmpsIntake - 0.2 && intakeMotor.getCurrent(CurrentUnit.AMPS) <= normalAmpsIntake + 0.2) {
+                    correctIntakeAmps = true;
+                }
+            }
+        }
+        if (correctIntakeAmps) {
+            if (intakeMotor.getCurrent(CurrentUnit.AMPS) <= ballIntakedAmps) {
+                ballsReallyIntaked += 1;
+                correctIntakeAmps = false;
+            }
+        }
+    }
+
     private void calculatePositionVisual() {
         grid[gridY][gridX] = " ";
         gridY = ((int) Math.floor((odo.getPosition().getX(DistanceUnit.INCH) + 72) / 24));
@@ -729,9 +743,9 @@ public class BlueNewGrosBot extends LinearOpMode {
         if (correctLaunchSpeed && isAtTarget(10, 100, 10)) {
             newLedColor = 0.5;
         } else if (correctLaunchSpeed) {
-            newLedColor = 0.444;
-        } else if (isAtTarget(10, 100, 10)) {
             newLedColor = 0.388;
+        } else if (isAtTarget(10, 100, 10)) {
+            newLedColor = 0.333;
         } else {
             newLedColor = 0;
         }
@@ -756,14 +770,17 @@ public class BlueNewGrosBot extends LinearOpMode {
         oldLedColor = newLedColor;
     }
 
-
     private void sendingAllTelemetry() {
         if (telemetryTimer.milliseconds() >= 50) {
             //Test trigonometry
             telemetry.addData("Position X to goal", (-72 - odo.getPosition().getX(DistanceUnit.INCH)));
             telemetry.addData("Position Y to goal", (-72 - odo.getPosition().getY(DistanceUnit.INCH)));
             absoluteHeadingToBlueGoal = Math.atan((-72 - odo.getPosition().getY(DistanceUnit.INCH)) / (-72 - odo.getPosition().getX(DistanceUnit.INCH)));
-            telemetry.addData("Angle to goal", absoluteHeadingToBlueGoal); 
+            telemetry.addData("Angle to goal", absoluteHeadingToBlueGoal);
+            telemetry.addLine("----------");
+            telemetry.addData("Amps Intake Motor", intakeMotor.getCurrent(CurrentUnit.AMPS));
+            telemetry.addData("Balls Intaked", ballsReallyIntaked);
+            telemetry.addLine("----------");
 
             //Visual for Position on Field
             for (int i = 0; i <= 5; i++) {
