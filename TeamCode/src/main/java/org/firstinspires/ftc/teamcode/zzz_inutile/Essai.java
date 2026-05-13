@@ -1,7 +1,10 @@
 package org.firstinspires.ftc.teamcode.zzz_inutile;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+
+@Disabled
 @Autonomous
 public class Essai extends OpMode {
 

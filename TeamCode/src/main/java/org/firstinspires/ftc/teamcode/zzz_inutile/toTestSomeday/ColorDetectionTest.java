@@ -24,6 +24,7 @@ package org.firstinspires.ftc.teamcode.zzz_inutile.toTestSomeday;
 import android.graphics.Color;
 import android.util.Size;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
@@ -67,6 +68,7 @@ import java.util.List;
  * Remove or comment out the @Disabled line to add this OpMode to the Driver Station OpMode list
  */
 
+@Disabled
 @TeleOp(name = "Concept: Vision Color-Locator (Circle)", group = "Concept")
 public class ColorDetectionTest extends LinearOpMode {
     @Override

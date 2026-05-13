@@ -132,6 +132,10 @@ public class BlueNewGrosBot extends LinearOpMode {
     double oldLedColor;
     double newLedColor;
 
+    //Automatic Shooting
+    boolean automaticShooting = false;
+    boolean automaticIntake = false;
+
     //To test (probably won't work the first time, but worth a shot)
     double absoluteHeadingToBlueGoal = 0;
 
@@ -394,11 +398,14 @@ public class BlueNewGrosBot extends LinearOpMode {
         }
 
         if (intakePower > 0) {
+            automaticIntake = true;
             if (doorSide == 1) {
                 servo1.setPower(-1);
             } else if (doorSide == 2) {
                 servo2.setPower(1);
             }
+        } else {
+            automaticIntake = false;
         }
     }
 
@@ -431,6 +438,10 @@ public class BlueNewGrosBot extends LinearOpMode {
             currentTargetPose = targetPoseEndgame;
             driveToTarget(currentTargetPose, 0.8);
         }
+        if (gamepad1.dpad_up) {
+            currentTargetPose = new Pose2D(DistanceUnit.INCH, odo.getPosition().getX(DistanceUnit.INCH), odo.getPosition().getY(DistanceUnit.INCH), AngleUnit.DEGREES, absoluteHeadingToBlueGoal);
+            driveToTarget(currentTargetPose, 0.8);
+        }
 
         if (gamepad1.ps) {
             odo.setPosition(new Pose2D(DistanceUnit.INCH, xStartingPosition, -yStartingPosition, AngleUnit.DEGREES, -headingStartingPosition));
@@ -448,7 +459,7 @@ public class BlueNewGrosBot extends LinearOpMode {
         odo.update();
         return Math.abs(odo.getPosX() - currentTargetPose.getX(DistanceUnit.MM)) < posTolerance &&
                 Math.abs(odo.getPosY() - currentTargetPose.getY(DistanceUnit.MM)) < posTolerance &&
-                Math.abs(odo.getPosition().getHeading(AngleUnit.RADIANS) - currentTargetPose.getHeading(AngleUnit.RADIANS)) < angleTolerance &&
+                Math.abs(odo.getPosition().getHeading(AngleUnit.DEGREES) - currentTargetPose.getHeading(AngleUnit.DEGREES)) < angleTolerance &&
                 Math.abs(odo.getVelX()) < velTolerance &&
                 Math.abs(odo.getVelY()) < velTolerance;
     }
@@ -555,14 +566,18 @@ public class BlueNewGrosBot extends LinearOpMode {
             } else if (gamepad2.right_stick_y < -0.75) {
                 servo1.setPower(-1);
             } else {
-                servo1.setPower(0);
+                if (!automaticShooting && !automaticIntake) {
+                    servo1.setPower(0);
+                }
             }
             if (gamepad2.left_stick_y < -0.75) {
                 servo2.setPower(1);
             } else if (gamepad2.left_stick_y > 0.75) {
                 servo2.setPower(-1);
             } else {
-                servo2.setPower(0);
+                if (!automaticShooting && !automaticIntake) {
+                    servo2.setPower(0);
+                }
             }
         } else if (odo.getPosition().getHeading(AngleUnit.DEGREES) > 0) {
             if (gamepad2.right_stick_y > 0.75) {
@@ -570,14 +585,18 @@ public class BlueNewGrosBot extends LinearOpMode {
             } else if (gamepad2.right_stick_y < -0.75) {
                 servo2.setPower(1);
             } else {
-                servo2.setPower(0);
+                if (!automaticShooting && !automaticIntake) {
+                    servo2.setPower(0);
+                }
             }
             if (gamepad2.left_stick_y < -0.75) {
                 servo1.setPower(-1);
             } else if (gamepad2.left_stick_y > 0.75) {
                 servo1.setPower(1);
             } else {
-                servo1.setPower(0);
+                if (!automaticShooting && !automaticIntake) {
+                    servo1.setPower(0);
+                }
             }
         }
     }
@@ -695,7 +714,7 @@ public class BlueNewGrosBot extends LinearOpMode {
     private void countBallsLaunched() {
         if (!correctLaunchSpeed) {
             if (launchVelocity > 0) {
-                if ((highMotor.getVelocity() >= launchVelocity - 10 && highMotor.getVelocity() <= launchVelocity + 10) && (lowMotor.getVelocity() >= launchVelocity - 10 && lowMotor.getVelocity() <= launchVelocity + 10)) {
+                if ((highMotor.getVelocity() >= launchVelocity - 25 && highMotor.getVelocity() <= launchVelocity + 25) && (lowMotor.getVelocity() >= launchVelocity - 25 && lowMotor.getVelocity() <= launchVelocity + 25)) {
                     correctLaunchSpeed = true;
                 }
             }
@@ -705,6 +724,9 @@ public class BlueNewGrosBot extends LinearOpMode {
                 ballsReallyLaunched += 1;
                 correctLaunchSpeed = false;
             }
+        }
+        if (launchVelocity == 0) {
+            correctLaunchSpeed = false;
         }
 
         if (ballsReallyLaunched >= 3) {
@@ -740,11 +762,11 @@ public class BlueNewGrosBot extends LinearOpMode {
     }
 
     private void indicatorLight() {
-        if (correctLaunchSpeed && isAtTarget(10, 100, 10)) {
+        if (correctLaunchSpeed && isAtTarget(100, 10, 5)) {
             newLedColor = 0.5;
         } else if (correctLaunchSpeed) {
             newLedColor = 0.388;
-        } else if (isAtTarget(10, 100, 10)) {
+        } else if (isAtTarget(100, 10, 5)) {
             newLedColor = 0.333;
         } else {
             newLedColor = 0;
@@ -757,12 +779,14 @@ public class BlueNewGrosBot extends LinearOpMode {
 
     private void shootWhenReady() {
         if (newLedColor == 0.5) {
+            automaticShooting = true;
             if (doorSide == 1) {
                 servo1.setPower(-1);
-            } else if (doorSide == 2) {
+//            } else if (doorSide == 2) {
                 servo2.setPower(1);
             }
         } else if (oldLedColor == 0.5) {
+            automaticShooting = false;
             servo1.setPower(0);
             servo2.setPower(0);
         }
@@ -773,14 +797,15 @@ public class BlueNewGrosBot extends LinearOpMode {
     private void sendingAllTelemetry() {
         if (telemetryTimer.milliseconds() >= 50) {
             //Test trigonometry
-            telemetry.addData("Position X to goal", (-72 - odo.getPosition().getX(DistanceUnit.INCH)));
-            telemetry.addData("Position Y to goal", (-72 - odo.getPosition().getY(DistanceUnit.INCH)));
-            absoluteHeadingToBlueGoal = Math.atan((-72 - odo.getPosition().getY(DistanceUnit.INCH)) / (-72 - odo.getPosition().getX(DistanceUnit.INCH)));
+            absoluteHeadingToBlueGoal = Math.atan((-62 - odo.getPosition().getY(DistanceUnit.INCH)) / (-62 - odo.getPosition().getX(DistanceUnit.INCH)));
+            absoluteHeadingToBlueGoal = absoluteHeadingToBlueGoal * 180 / Math.PI;
+            absoluteHeadingToBlueGoal = -180 + absoluteHeadingToBlueGoal;
             telemetry.addData("Angle to goal", absoluteHeadingToBlueGoal);
             telemetry.addLine("----------");
-            telemetry.addData("Amps Intake Motor", intakeMotor.getCurrent(CurrentUnit.AMPS));
+            telemetry.addData("Amps Intake Motor", intakeMotor.getVelocity());
             telemetry.addData("Balls Intaked", ballsReallyIntaked);
             telemetry.addLine("----------");
+            telemetry.addData("Intake on?", automaticIntake);
 
             //Visual for Position on Field
             for (int i = 0; i <= 5; i++) {
