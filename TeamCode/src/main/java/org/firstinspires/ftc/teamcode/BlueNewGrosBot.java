@@ -224,8 +224,12 @@ public class BlueNewGrosBot extends LinearOpMode {
         intakeMotor.setDirection(DcMotorEx.Direction.REVERSE);
 
         //À tuner 😱🤞🥵
-        //highMotor.setVelocityPIDFCoefficients(0,0,0,0);
-        //lowMotor.setVelocityPIDFCoefficients(0,0,0,0);
+        //highMotor.setVelocityPIDFCoefficients(850, 0,50,18);
+        //lowMotor.setVelocityPIDFCoefficients(850,0,50,22);
+
+
+        highMotor.setVelocityPIDFCoefficients(500, 5,150,1.5);
+        lowMotor.setVelocityPIDFCoefficients(500,5,150,4);
 
         imu = hardwareMap.get(IMU.class, "imu");
         // This needs to be changed to match the orientation on your robot
